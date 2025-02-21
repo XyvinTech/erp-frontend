@@ -110,7 +110,7 @@ const PayrollStatusModal = ({ payroll, onClose, onSuccess }) => {
                         <select
                           id="status"
                           name="status"
-                          className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-black focus:outline-none focus:ring-black sm:text-sm"
                           {...formik.getFieldProps('status')}
                         >
                           <option value="pending">Pending</option>
@@ -130,7 +130,7 @@ const PayrollStatusModal = ({ payroll, onClose, onSuccess }) => {
                           id="remarks"
                           name="remarks"
                           rows={3}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black sm:text-sm"
                           placeholder="Add any notes or comments..."
                           {...formik.getFieldProps('remarks')}
                         />
@@ -142,7 +142,7 @@ const PayrollStatusModal = ({ payroll, onClose, onSuccess }) => {
                       <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                         <button
                           type="submit"
-                          className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto"
+                          className="inline-flex w-full justify-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 sm:ml-3 sm:w-auto"
                         >
                           Update Status
                         </button>
