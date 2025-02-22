@@ -141,51 +141,64 @@ class AuthService {
   }
 
   /**
+   * Get user profile
+   */
+  async getProfile() {
+    try {
+      const response = await this.api.get('/api/hrm/employees/me');
+      if (response.data.status === 'success') {
+        this.updateUser(response.data.data.employee);
+        return response.data;
+      }
+      throw new Error('Failed to get profile');
+    } catch (error) {
+      console.error('Error getting profile:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Update profile picture
    */
   async updateProfilePicture(formData) {
     try {
-      const user = this.getCurrentUser();
-      if (!user || !user._id) {
-        throw new Error('User not found in local storage');
-      }
+      const response = await this.api.post('/api/hrm/employees/me/profile-picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      console.log('Raw profile picture update response:', response);
 
-      // First try the /me endpoint
-      try {
-        const response = await this.api.post('/api/hrm/employees/me/profile-picture', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        if (response.data.status === 'success') {
-          const updatedUser = {
-            ...user,
-            ...response.data.data.employee
-          };
-          this.updateUser(updatedUser);
-          return response.data;
+      if (response?.data?.status === 'success' && response.data.data) {
+        const updatedUser = response.data.data.employee;
+        
+        if (!updatedUser) {
+          console.error('Invalid response format:', response.data);
+          throw new Error('No employee data in response');
         }
-      } catch (error) {
-        // If /me endpoint fails, try with ID
-        if (error.response?.status === 404) {
-          const response = await this.api.post(`/api/hrm/employees/${user._id}/profile-picture`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-          if (response.data.status === 'success') {
-            const updatedUser = {
-              ...user,
-              ...response.data.data.employee
-            };
-            this.updateUser(updatedUser);
-            return response.data;
+
+        if (!updatedUser.profilePicture) {
+          console.error('No profile picture in response:', updatedUser);
+          throw new Error('No profile picture URL in response');
+        }
+
+        // Store the user data
+        this.updateUser(updatedUser);
+        return {
+          data: {
+            status: 'success',
+            data: { employee: updatedUser }
           }
-        }
-        throw error;
+        };
       }
+      
+      throw new Error(response?.data?.message || 'Failed to update profile picture');
     } catch (error) {
       console.error('Error updating profile picture:', error);
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error.message || 'Server error');
+      }
       throw error;
     }
   }

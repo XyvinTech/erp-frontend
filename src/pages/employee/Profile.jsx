@@ -8,7 +8,8 @@ import { toast } from 'react-hot-toast';
 import { getMyAttendance } from '@/services/hrm/hrmService';
 
 const Profile = () => {
-  const currentUser = authService.getCurrentUser();
+  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser());
+  const [profilePicUrl, setProfilePicUrl] = useState('/assets/images/default-avatar.png');
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -35,6 +36,37 @@ const Profile = () => {
   useEffect(() => {
     fetchAttendanceStats();
   }, []);
+
+  useEffect(() => {
+    setFormData({
+      firstName: currentUser?.firstName || '',
+      lastName: currentUser?.lastName || '',
+      email: currentUser?.email || '',
+      phone: currentUser?.phone || '',
+      emergencyContact: {
+        name: currentUser?.emergencyContact?.name || '',
+        relationship: currentUser?.emergencyContact?.relationship || '',
+        phone: currentUser?.emergencyContact?.phone || '',
+        email: currentUser?.emergencyContact?.email || '',
+      },
+    });
+  }, [currentUser]);
+
+  useEffect(() => {
+    const picturePath = currentUser?.profilePicture;
+    if (picturePath) {
+      // If it's already a full URL, use it as is
+      if (picturePath.startsWith('http')) {
+        setProfilePicUrl(picturePath);
+      } else {
+        // Remove any leading slashes and construct the full URL
+        const cleanPath = picturePath.replace(/^\/+/, '');
+        setProfilePicUrl(`${import.meta.env.VITE_API_URL}/${cleanPath}`);
+      }
+    } else {
+      setProfilePicUrl('/assets/images/default-avatar.png');
+    }
+  }, [currentUser]);
 
   const fetchAttendanceStats = async () => {
     try {
@@ -161,14 +193,34 @@ const Profile = () => {
       const formData = new FormData();
       formData.append('profilePicture', file);
 
-      await authService.updateProfilePicture(formData);
+      const response = await authService.updateProfilePicture(formData);
+      
+      // Log the entire response for debugging
+      console.log('Full response:', response);
+      console.log('Response data:', response.data);
+      console.log('Employee data:', response.data?.data?.employee);
+
+      if (!response.data?.data?.employee) {
+        throw new Error('No employee data received');
+      }
+
+      const updatedUser = response.data.data.employee;
+      authService.updateUser(updatedUser);
+      setCurrentUser(updatedUser);
+
+      if (!updatedUser.profilePicture) {
+        throw new Error('No profile picture URL received');
+      }
+
+      const cleanPath = updatedUser.profilePicture.replace(/^\/+/, '');
+      const fullUrl = `${import.meta.env.VITE_API_URL}/${cleanPath}`;
+      
+      console.log('Setting profile URL:', fullUrl);
+      setProfilePicUrl(fullUrl);
       toast.success('Profile picture updated successfully');
-      
-      // Refresh user data
-      const updatedUser = await authService.getProfile();
-      authService.updateUser(updatedUser.data.user);
-      
+
     } catch (error) {
+      console.error('Error updating profile picture:', error);
       toast.error(error.message || 'Failed to update profile picture');
     } finally {
       setIsUploading(false);
@@ -206,15 +258,19 @@ const Profile = () => {
             <div className="relative group">
               <div className="w-32 h-32 rounded-full bg-gray-200 mb-4 overflow-hidden ring-4 ring-primary-50">
                 <img
-                  src={currentUser?.profilePicture || '/assets/images/default-avatar.png'}
+                  src={profilePicUrl}
                   alt="Profile"
                   className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/assets/images/default-avatar.png';
+                  }}
                 />
               </div>
               <button 
                 onClick={handleImageClick}
                 disabled={isUploading}
-                className="absolute bottom-4 right-0 p-2 bg-primary-600 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                className="absolute bottom-4 right-0 p-2 bg-primary-600 rounded-full text-black opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
               >
                 <CameraIcon className="h-4 w-4" />
               </button>
