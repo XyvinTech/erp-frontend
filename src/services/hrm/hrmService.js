@@ -99,6 +99,10 @@ export const deleteEmployee = async (id) => {
   const response = await hrmService.delete(`/employees/${id}`);
   return response.data;
 };
+export const deleteAttendance = async (id) => {
+  const response = await hrmService.delete(`/attendance/${id}`);
+  return response.data;
+};
 
 // Department Services
 export const getDepartments = async () => {
@@ -335,6 +339,18 @@ export const getNextDepartmentCode = async () => {
       status: error.response?.status,
       data: error.response?.data
     });
+    throw error;
+  }
+};
+
+export const getNextEmployeeId = async () => {
+  try {
+    console.log('Requesting next employee ID...');
+    const response = await hrmService.get('/employees/next-id');
+    console.log('Next employee ID response:', response);
+    return response;
+  } catch (error) {
+    console.error('Error fetching next employee ID:', error);
     throw error;
   }
 }; 

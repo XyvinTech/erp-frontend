@@ -36,13 +36,13 @@ const validationSchema = Yup.object({
   }),
   phone: Yup.string().required('Phone number is required'),
   department: Yup.string().required('Department is required'),
-  position: Yup.string().required('Position is required'),
+  position: Yup.mixed().required('Position is required'),
   role: Yup.string().required('Role is required'),
   joiningDate: Yup.date().required('Joining date is required'),
   status: Yup.string().required('Status is required'),
   salary: Yup.number()
-    // .min(0, 'Salary cannot be negative')
-    // .required('Salary is required'),
+    .min(0, 'Salary cannot be negative')
+    .required('Salary is required'),
 });
 
 const EmployeeModal = ({ employee, onClose, onSuccess }) => {
@@ -51,41 +51,7 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
   const currentUser = authService.getCurrentUser();
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        console.log('Fetching departments and positions...');
-        await Promise.all([
-          fetchDepartments(),
-          fetchPositions()
-        ]);
-        console.log('Departments after fetch:', departments);
-        console.log('Positions after fetch:', positions);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        toast.error('Failed to load departments and positions');
-      }
-    };
-
-    loadData();
-  }, [fetchDepartments, fetchPositions]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log('Form submitted, calling formik.handleSubmit');
-    console.log('Current employee data:', employee);
-    console.log('Form values:', formik.values);
-    
-    // Validate form before submission
-    const errors = await formik.validateForm();
-    if (Object.keys(errors).length === 0) {
-      formik.handleSubmit(e);
-    } else {
-      console.error('Form validation errors:', errors);
-      toast.error('Please fill in all required fields correctly');
-    }
-  };
-
+  // Initialize formik first
   const formik = useFormik({
     initialValues: {
       employeeId: employee?.employeeId || '',
@@ -96,7 +62,9 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
       isNewEmployee: !employee,
       phone: employee?.phone || '',
       department: employee?.department?._id || employee?.department || '',
-      position: employee?.position?._id || employee?.position || '',
+      position: employee?.position?._id || 
+               employee?.position?.id || 
+               (typeof employee?.position === 'string' ? employee.position : ''),
       role: employee?.role || 'Employee',
       joiningDate: employee?.joiningDate
         ? new Date(employee.joiningDate).toISOString().split('T')[0]
@@ -116,21 +84,21 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
           return;
         }
 
-        // Ensure position is sent as string ID
-        const positionId = typeof values.position === 'object' ? values.position.id : values.position;
-
+        // Create form data with position ID
         const formData = {
           firstName: values.firstName,
           lastName: values.lastName,
           email: values.email,
           phone: values.phone,
           department: values.department,
-          position: positionId,
+          position: values.position, // This should now always be an ID string
           role: values.role,
           joiningDate: values.joiningDate,
           status: values.status || 'active',
           salary: Number(values.salary)
         };
+
+        console.log('Sending form data:', formData);
 
         if (!employee?.id && !employee?._id) {
           formData.employeeId = values.employeeId;
@@ -161,6 +129,70 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
       }
     },
   });
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        console.log('Fetching departments and positions...');
+        await Promise.all([
+          fetchDepartments(),
+          fetchPositions()
+        ]);
+        console.log('Departments after fetch:', departments);
+        console.log('Positions after fetch:', positions);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast.error('Failed to load departments and positions');
+      }
+    };
+
+    loadData();
+  }, [fetchDepartments, fetchPositions]);
+
+  useEffect(() => {
+    const fetchEmployeeId = async () => {
+      if (!employee) { // Only fetch new ID when creating new employee
+        try {
+          console.log('Fetching next employee ID...');
+          const response = await hrmService.getNextEmployeeId();
+          console.log('Response from getNextEmployeeId:', response);
+          
+          // Fix the response structure extraction
+          const nextId = response?.data?.employee?.employeeId;
+          console.log('Next ID extracted:', nextId);
+          
+          if (nextId) {
+            formik.setFieldValue('employeeId', nextId);
+          } else {
+            console.error('Invalid response structure:', response);
+            toast.error('Failed to generate employee ID');
+          }
+        } catch (error) {
+          console.error('Error fetching employee ID:', error);
+          toast.error('Failed to generate employee ID');
+        }
+      }
+    };
+
+    fetchEmployeeId();
+  }, [employee]); // Remove formik from dependencies since it's stable now
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log('Form submitted, calling formik.handleSubmit');
+    console.log('Current form values:', formik.values);
+    
+    // Validate form before submission
+    const errors = await formik.validateForm();
+    if (Object.keys(errors).length === 0) {
+      formik.handleSubmit(e);
+    } else {
+      console.error('Form validation errors:', errors);
+      // Show all validation errors to the user
+      const errorMessages = Object.values(errors).join(', ');
+      toast.error(`Please fix the following errors: ${errorMessages}`);
+    }
+  };
 
   return (
     <Transition.Root show={true} as={Fragment}>
@@ -221,6 +253,8 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             name="employeeId"
                             className="input"
                             {...formik.getFieldProps('employeeId')}
+                            readOnly
+                            disabled
                           />
                           {formik.touched.employeeId && formik.errors.employeeId && (
                             <div className="error-message">{formik.errors.employeeId}</div>
@@ -360,14 +394,24 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="position"
                             name="position"
                             className="input"
-                            {...formik.getFieldProps('position')}
+                            value={formik.values.position || ''}
+                            onChange={(e) => {
+                              formik.setFieldValue('position', e.target.value);
+                            }}
+                            onBlur={formik.handleBlur}
                           >
                             <option value="">Select Position</option>
-                            {positions && positions.map((position) => (
-                              <option key={position._id || position.id} value={position._id || position.id}>
-                                {position.title}
-                              </option>
-                            ))}
+                            {positions && positions.map((position) => {
+                              const positionId = position._id || position.id;
+                              return (
+                                <option 
+                                  key={positionId}
+                                  value={positionId}
+                                >
+                                  {position.title}
+                                </option>
+                              );
+                            })}
                           </select>
                           {formik.touched.position && formik.errors.position && (
                             <div className="error-message">{formik.errors.position}</div>

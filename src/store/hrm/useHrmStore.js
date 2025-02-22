@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as hrmService from '../../services/hrm/hrmService';
 import ApiService from '../../services/api.service';
+import axios from 'axios';
 
 const useHrmStore = create((set, get) => ({
   // Employees
@@ -640,6 +641,27 @@ const useHrmStore = create((set, get) => ({
       leavesError: null,
       payrollError: null,
     });
+  },
+
+  deleteAttendance: async (id) => {
+    set({ attendanceLoading: true });
+    try {
+      const response = await hrmService.deleteAttendance(id);
+      
+      // Update the attendance list by removing the deleted record
+      set((state) => ({
+        attendance: state.attendance.filter(record => record._id !== id),
+        attendanceLoading: false
+      }));
+
+      return { success: true };
+    } catch (error) {
+      set({ 
+        attendanceError: error.response?.data?.message || 'Failed to delete attendance',
+        attendanceLoading: false 
+      });
+      throw error;
+    }
   },
 }));
 

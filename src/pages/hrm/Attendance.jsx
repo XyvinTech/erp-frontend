@@ -22,6 +22,7 @@ import {
 import useHrmStore from '../../store/hrm/useHrmStore';
 import AttendanceModal from '../../components/modules/hrm/AttendanceModal';
 import AttendanceEditModal from '../../components/modules/hrm/AttendanceEditModal';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 
 const AttendanceTypeIcons = () => {
   const icons = [
@@ -148,6 +149,9 @@ const Attendance = () => {
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAttendance, setSelectedAttendance] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [attendanceToDelete, setAttendanceToDelete] = useState(null);
+  const [isCheckingNextMonth, setIsCheckingNextMonth] = useState(false);
 
   const {
     attendance,
@@ -157,26 +161,47 @@ const Attendance = () => {
     checkIn,
     getAttendanceStats,
     deleteAttendance
-  } = useHrmStore();
+  } = useHrmStore(state => ({
+    attendance: state.attendance,
+    attendanceLoading: state.attendanceLoading,
+    attendanceError: state.attendanceError,
+    fetchAttendance: state.fetchAttendance,
+    checkIn: state.checkIn,
+    getAttendanceStats: state.getAttendanceStats,
+    deleteAttendance: state.deleteAttendance
+  }));
+
+  console.log('Available store functions:', useHrmStore());
 
   const [stats, setStats] = useState({
     totalEmployees: 0,
-    presentToday: 0,
+    presentCount: 0,
     halfDay: 0,
     onLeave: 0,
+    absent: 0,
+    late: 0,
     changes: {
       employees: '0%',
       present: '0%',
       halfDay: '0%',
-      leave: '0%'
+      leave: '0%',
+      absent: '0%',
+      late: '0%'
     }
   });
 
-  // Load initial data
+  // Load initial data with date range
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        await fetchAttendance();
+        // Get current month's date range
+        const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+        await fetchAttendance({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        });
       } catch (error) {
         console.error('Error loading initial data:', error);
         toast.error('Failed to load attendance data');
@@ -184,111 +209,104 @@ const Attendance = () => {
     };
 
     loadInitialData();
-  }, []); // Run only once on component mount
+  }, [currentDate]); // Run when currentDate changes
 
   // Load attendance stats
   useEffect(() => {
     const loadStats = async () => {
       try {
         // Get current month's date range
-        const now = new Date();
-        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
         // Get current month's stats
-        const response = await getAttendanceStats({
-          startDate: currentMonthStart.toISOString(),
-          endDate: currentMonthEnd.toISOString()
+        const currentMonthStats = attendance.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate.getMonth() === currentDate.getMonth() && 
+                 recordDate.getFullYear() === currentDate.getFullYear();
         });
-        
-        console.log('Current Month Response:', response);
 
-        if (response?.stats || Array.isArray(attendance)) {
-          // Get unique employees from attendance data
-          const uniqueEmployees = new Set(
-            attendance.map(record => record.employee._id)
-          );
-          
-          const totalEmployees = uniqueEmployees.size;
-          const presentCount = attendance.filter(record => record.status === 'Present').length;
-          const halfDayCount = attendance.filter(record => record.status === 'Half-Day').length;
-          const leaveCount = attendance.filter(record => record.status === 'On-Leave').length;
+        // Calculate current month's counts
+        const uniqueEmployees = new Set(currentMonthStats.map(record => record.employee._id));
+        const totalEmployees = uniqueEmployees.size;
+        const presentCount = currentMonthStats.filter(record => record.status === 'Present').length;
+        const halfDayCount = currentMonthStats.filter(record => record.status === 'Half-Day').length;
+        const leaveCount = currentMonthStats.filter(record => record.status === 'On-Leave').length;
+        const absentCount = currentMonthStats.filter(record => record.status === 'Absent').length;
+        const lateCount = currentMonthStats.filter(record => record.status === 'Late').length;
 
-          console.log('Current Month Counts:', {
-            totalEmployees,
-            presentCount,
-            halfDayCount,
-            leaveCount
-          });
+        // Get previous month's date range
+        const prevMonth = new Date(currentDate);
+        prevMonth.setMonth(prevMonth.getMonth() - 1);
+        const prevMonthStats = attendance.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate.getMonth() === prevMonth.getMonth() && 
+                 recordDate.getFullYear() === prevMonth.getFullYear();
+        });
 
-          // Get previous month's date range
-          const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        // Calculate previous month's counts
+        const prevUniqueEmployees = new Set(prevMonthStats.map(record => record.employee._id));
+        const prevTotalEmployees = prevUniqueEmployees.size;
+        const prevPresentCount = prevMonthStats.filter(record => record.status === 'Present').length;
+        const prevHalfDayCount = prevMonthStats.filter(record => record.status === 'Half-Day').length;
+        const prevLeaveCount = prevMonthStats.filter(record => record.status === 'On-Leave').length;
+        const prevAbsentCount = prevMonthStats.filter(record => record.status === 'Absent').length;
+        const prevLateCount = prevMonthStats.filter(record => record.status === 'Late').length;
 
-          // Get previous month's stats
-          const prevMonthResponse = await getAttendanceStats({
-            startDate: prevMonthStart.toISOString(),
-            endDate: prevMonthEnd.toISOString()
-          });
+        // Calculate percentage changes
+        const calculateChange = (current, previous) => {
+          if (previous === 0) {
+            return current > 0 ? '+100%' : '0%';
+          }
+          const change = ((current - previous) / previous) * 100;
+          return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
+        };
 
-          console.log('Previous Month Response:', prevMonthResponse);
+        const newStats = {
+          totalEmployees: totalEmployees || 0,
+          presentCount: presentCount || 0,
+          halfDay: halfDayCount || 0,
+          onLeave: leaveCount || 0,
+          absent: absentCount || 0,
+          late: lateCount || 0,
+          changes: {
+            employees: calculateChange(totalEmployees, prevTotalEmployees),
+            present: calculateChange(presentCount, prevPresentCount),
+            halfDay: calculateChange(halfDayCount, prevHalfDayCount),
+            leave: calculateChange(leaveCount, prevLeaveCount),
+            absent: calculateChange(absentCount, prevAbsentCount),
+            late: calculateChange(lateCount, prevLateCount)
+          }
+        };
 
-          // Calculate previous month's stats
-          const prevStats = prevMonthResponse?.stats || [];
-          const prevTotalEmployees = prevStats.length > 0 ? new Set(prevStats.map(stat => stat._id)).size : 0;
-          const prevPresentCount = prevStats.filter(stat => stat.status === 'Present').length;
-          const prevHalfDayCount = prevStats.filter(stat => stat.status === 'Half-Day').length;
-          const prevLeaveCount = prevStats.filter(stat => stat.status === 'On-Leave').length;
-
-          console.log('Previous Month Counts:', {
-            prevTotalEmployees,
-            prevPresentCount,
-            prevHalfDayCount,
-            prevLeaveCount
-          });
-
-          // Calculate percentage changes
-          const calculateChange = (current, previous) => {
-            if (previous === 0) {
-              return current > 0 ? '+100%' : '0%';
-            }
-            const change = ((current - previous) / previous) * 100;
-            return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
-          };
-
-          const newStats = {
-            totalEmployees,
-            presentToday: presentCount,
-            halfDay: halfDayCount,
-            onLeave: leaveCount,
-            changes: {
-              employees: calculateChange(totalEmployees, prevTotalEmployees),
-              present: calculateChange(presentCount, prevPresentCount),
-              halfDay: calculateChange(halfDayCount, prevHalfDayCount),
-              leave: calculateChange(leaveCount, prevLeaveCount)
-            }
-          };
-
-          console.log('Setting new stats:', newStats);
-          setStats(newStats);
-        }
+        setStats(newStats);
       } catch (error) {
         console.error('Failed to load stats:', error);
         toast.error('Failed to load attendance statistics');
       }
     };
 
-    loadStats();
-  }, [getAttendanceStats, attendance]);
+    if (Array.isArray(attendance) && attendance.length > 0) {
+      loadStats();
+    }
+  }, [currentDate, attendance]); // Run when currentDate or attendance changes
 
   const handleCheckIn = async () => {
     try {
       await checkIn({ date: selectedDate });
       toast.success('Checked in successfully');
-      // Refresh both attendance list and stats
+      // Refresh both attendance list and stats with current month's date range
+      const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       await Promise.all([
-        fetchAttendance(),
-        getAttendanceStats()
+        fetchAttendance({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        }),
+        getAttendanceStats({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        })
       ]);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to check in');
@@ -300,36 +318,84 @@ const Attendance = () => {
     setShowEditModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this attendance record?')) {
-      try {
-        await deleteAttendance(id);
-        toast.success('Attendance record deleted successfully');
-        // Refresh both attendance list and stats
-        await Promise.all([
-          fetchAttendance(),
-          getAttendanceStats()
-        ]);
-      } catch (error) {
-        toast.error(error.response?.data?.message || 'Failed to delete attendance record');
+  const handleDelete = (attendance) => {
+    setAttendanceToDelete(attendance);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      if (!attendanceToDelete?._id) {
+        toast.error('Invalid attendance record');
+        return;
       }
+
+      const response = await deleteAttendance(attendanceToDelete._id);
+      
+      if (response?.success) {
+        toast.success('Attendance record deleted successfully');
+        // Refresh both attendance list and stats with current month's date range
+        const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        await Promise.all([
+          fetchAttendance({
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+          }),
+          getAttendanceStats({
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+          })
+        ]);
+      } else {
+        throw new Error(response?.message || 'Failed to delete attendance record');
+      }
+    } catch (error) {
+      console.error('Delete attendance error:', error);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to delete attendance record. Please try again later.'
+      );
+    } finally {
+      setDeleteModalOpen(false);
+      setAttendanceToDelete(null);
     }
   };
 
-  const handleNextMonth = () => {
-    setCurrentDate(prevDate => {
-      const nextMonth = new Date(prevDate);
+  const handleNextMonth = async () => {
+    try {
+      setIsCheckingNextMonth(true);
+      // Calculate next month's date range
+      const nextMonth = new Date(currentDate);
       nextMonth.setMonth(nextMonth.getMonth() + 1);
-      return nextMonth;
-    });
+      
+      const now = new Date();
+      // Only prevent navigation if we're trying to go beyond current month/year
+      const wouldExceedCurrentMonth = (
+        nextMonth.getFullYear() > now.getFullYear() || 
+        (nextMonth.getFullYear() === now.getFullYear() && 
+         nextMonth.getMonth() > now.getMonth())
+      );
+      
+      if (wouldExceedCurrentMonth) {
+        toast.error('Cannot navigate beyond the current month');
+        return;
+      }
+
+      setCurrentDate(nextMonth);
+    } catch (error) {
+      console.error('Error navigating to next month:', error);
+      toast.error('Failed to navigate to next month');
+    } finally {
+      setIsCheckingNextMonth(false);
+    }
   };
 
   const handlePreviousMonth = () => {
-    setCurrentDate(prevDate => {
-      const prevMonth = new Date(prevDate);
-      prevMonth.setMonth(prevMonth.getMonth() - 1);
-      return prevMonth;
-    });
+    const prevMonth = new Date(currentDate);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    setCurrentDate(prevMonth);
   };
 
   const formatMonthYear = (date) => {
@@ -465,7 +531,7 @@ const Attendance = () => {
               <PencilIcon className="h-5 w-5" />
             </button>
             <button
-              onClick={() => handleDelete(row.original._id)}
+              onClick={() => handleDelete(row.original)}
               className="text-red-600 hover:text-red-900 transition-colors duration-200"
               title="Delete Attendance"
             >
@@ -507,6 +573,11 @@ const Attendance = () => {
     usePagination
   );
 
+  // Update isCurrentMonth calculation to check if we're at current month AND year
+  const now = new Date();
+  const isCurrentMonth = currentDate.getMonth() === now.getMonth() && 
+                        currentDate.getFullYear() === now.getFullYear();
+
   if (attendanceLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -536,24 +607,24 @@ const Attendance = () => {
         />
         <SummaryCard
           icon={CheckIcon}
-          title="Present Today"
-          value={stats.presentToday}
+          title={`Present (${formatMonthYear(currentDate)})`}
+          value={stats.presentCount}
           change={stats.changes.present}
           isIncrease={stats.changes.present.startsWith('+')}
         />
         <SummaryCard
           icon={ClockIcon}
-          title="Half Day"
-          value={stats.halfDay}
-          change={stats.changes.halfDay}
-          isIncrease={stats.changes.halfDay.startsWith('+')}
+          title={`Late (${formatMonthYear(currentDate)})`}
+          value={stats.late}
+          change={stats.changes.late}
+          isIncrease={stats.changes.late.startsWith('+')}
         />
         <SummaryCard
-          icon={PaperAirplaneIcon}
-          title="On Leave"
-          value={stats.onLeave}
-          change={stats.changes.leave}
-          isIncrease={stats.changes.leave.startsWith('+')}
+          icon={XMarkIcon}
+          title={`Absent (${formatMonthYear(currentDate)})`}
+          value={stats.absent}
+          change={stats.changes.absent}
+          isIncrease={stats.changes.absent.startsWith('+')}
         />
       </div>
 
@@ -575,10 +646,17 @@ const Attendance = () => {
                 </span>
                 <button
                   onClick={handleNextMonth}
-                  className="btn btn-icon btn-secondary transition-all duration-200 hover:scale-105"
-                  title="Next Month"
+                  disabled={isCheckingNextMonth || isCurrentMonth}
+                  className={`btn btn-icon btn-secondary transition-all duration-200 hover:scale-105 ${
+                    (isCheckingNextMonth || isCurrentMonth) ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  title={isCurrentMonth ? "Cannot navigate beyond current month" : "Next Month"}
                 >
-                  <ChevronRightIcon className="h-5 w-5" />
+                  {isCheckingNextMonth ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+                  ) : (
+                    <ChevronRightIcon className="h-5 w-5" />
+                  )}
                 </button>
               </div>
               <button
@@ -654,6 +732,21 @@ const Attendance = () => {
                           </tr>
                         );
                       })}
+                      {(!data || data.length === 0) && (
+                        <tr>
+                          <td colSpan={columns.length} className="px-3 py-8 text-center">
+                            <div className="flex flex-col items-center justify-center space-y-2">
+                              <CalendarDaysIcon className="h-8 w-8 text-gray-400" />
+                              <p className="text-base font-medium text-gray-500">
+                                No attendance records found for {formatMonthYear(currentDate)}
+                              </p>
+                              <p className="text-sm text-gray-400">
+                                Try selecting a different month or add new attendance records
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -662,50 +755,28 @@ const Attendance = () => {
           </div>
 
           {/* Pagination */}
-          <div className="mt-4 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-            <div className="flex flex-1 justify-between sm:hidden">
-              <button
-                onClick={() => previousPage()}
-                disabled={!canPreviousPage}
-                className="btn btn-secondary"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => nextPage()}
-                disabled={!canNextPage}
-                className="btn btn-secondary"
-              >
-                Next
-              </button>
-            </div>
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{pageIndex * pageSize + 1}</span> to{' '}
-                  <span className="font-medium">
-                    {Math.min((pageIndex + 1) * pageSize, data.length)}
-                  </span>{' '}
-                  of <span className="font-medium">{data.length}</span> results
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => previousPage()}
-                  disabled={!canPreviousPage}
-                  className="btn btn-icon btn-secondary"
-                >
-                  <ChevronLeftIcon className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => nextPage()}
-                  disabled={!canNextPage}
-                  className="btn btn-icon btn-secondary"
-                >
-                  <ChevronRightIcon className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
+          <div className="flex justify-center gap-2 mt-4">
+            <button
+              onClick={() => previousPage()}
+              disabled={!canPreviousPage}
+              className="btn btn-icon btn-secondary transition-all duration-200 hover:scale-105"
+              title="Previous Page"
+            >
+              <ChevronLeftIcon className="h-5 w-5" />
+            </button>
+            <span className="py-2 px-3 text-sm">
+              Page {pageIndex + 1} of {pageOptions.length}
+            </span>
+            <button
+              onClick={() => nextPage()}
+              disabled={!canNextPage}
+              className={`btn btn-icon btn-secondary transition-all duration-200 hover:scale-105 ${
+                !canNextPage ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              title="Next Page"
+            >
+              <ChevronRightIcon className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -721,10 +792,18 @@ const Attendance = () => {
           onSuccess={async () => {
             setShowModal(false);
             setSelectedAttendance(null);
-            // Refresh both attendance list and stats
+            // Refresh both attendance list and stats with current month's date range
+            const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
             await Promise.all([
-              fetchAttendance(),
-              getAttendanceStats()
+              fetchAttendance({
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString()
+              }),
+              getAttendanceStats({
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString()
+              })
             ]);
           }}
         />
@@ -741,14 +820,38 @@ const Attendance = () => {
           onSuccess={async () => {
             setShowEditModal(false);
             setSelectedAttendance(null);
-            // Refresh both attendance list and stats
+            // Refresh both attendance list and stats with current month's date range
+            const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
             await Promise.all([
-              fetchAttendance(),
-              getAttendanceStats()
+              fetchAttendance({
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString()
+              }),
+              getAttendanceStats({
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString()
+              })
             ]);
           }}
         />
       )}
+
+      {/* Add DeleteConfirmationModal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setAttendanceToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Attendance Record"
+        message={
+          attendanceToDelete
+            ? `Are you sure you want to delete the attendance record for ${attendanceToDelete.employee.firstName} ${attendanceToDelete.employee.lastName} on ${new Date(attendanceToDelete.date).toLocaleDateString()}?`
+            : ''
+        }
+      />
     </div>
   );
 };
