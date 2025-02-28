@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
+    "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.0.18",
     "@radix-ui/react-select": "^2.1.6",
     "axios": "^1.6.2",
@@ -27,7 +28,7 @@
     "react-day-picker": "^9.5.1",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
-    "react-hot-toast": "^2.4.1",
+    "react-hot-toast": "^2.5.2",
     "react-icons": "^4.12.0",
     "react-router-dom": "^6.20.0",
     "react-table": "^7.8.0",

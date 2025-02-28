@@ -12,6 +12,8 @@ import {
   BanknotesIcon,
   UserCircleIcon,
   DocumentTextIcon,
+  UserGroupIcon,
+  FolderIcon,
 } from '@heroicons/react/24/outline';
 import authService from '@/services/auth.service';
 
@@ -43,6 +45,23 @@ const hrmNavigation = {
   ],
 };
 
+const clientsNavigation = {
+  name: 'Clients',
+  icon: UserGroupIcon,
+  children: [
+    { name: 'All Clients', href: '/clients/list', icon: UserGroupIcon },
+  ],
+};
+
+const projectsNavigation = {
+  name: 'Project Management',
+  icon: FolderIcon,
+  children: [
+    { name: 'All Projects', href: '/projects/list', icon: FolderIcon },
+    { name: 'Assigned Projects', href: '/projects/assigned', icon: UserGroupIcon },
+  ],
+};
+
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
@@ -58,6 +77,8 @@ const Sidebar = ({ open, setOpen }) => {
   
   if (currentUser?.role === 'admin' || currentUser?.role === 'manager') {
     navigation.push(hrmNavigation);
+    navigation.push(clientsNavigation);
+    navigation.push(projectsNavigation);
   }
 
   const toggleMenu = (menuName) => {

@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, createBrowserRouter, RouterProvider } from 'react-router-dom';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 
@@ -23,39 +23,54 @@ import PaySlip from '@/pages/employee/PaySlip';
 import LeaveApplication from '@/pages/employee/LeaveApplication';
 import MyAttendance from '@/pages/employee/MyAttendance';
 
+// Client Pages
+import ClientList from '@/pages/clients/ClientList';
+
+// Project Management Pages
+import ProjectList from '@/pages/projects/ProjectList';
+import AssignProject from '@/pages/projects/AssignProject';
+import AssignedProjects from '@/pages/projects/AssignedProjects';
+import ProjectKanban from '@/pages/projects/ProjectKanban';
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <DashboardLayout />,
+        children: [
+          { path: "/", element: <Dashboard /> },
+          { path: "/employee/profile", element: <Profile /> },
+          { path: "/employee/myAttendance", element: <MyAttendance /> },
+          { path: "/employee/LeaveApplication", element: <LeaveApplication /> },
+          { path: "/employee/payslip", element: <PaySlip /> },
+          { path: "/hrm/employees", element: <Employees /> },
+          { path: "/hrm/departments", element: <Departments /> },
+          { path: "/hrm/positions", element: <Positions /> },
+          { path: "/hrm/attendance", element: <Attendance /> },
+          { path: "/hrm/leave", element: <Leave /> },
+          { path: "/hrm/payroll", element: <Payroll /> },
+          { path: "/clients/list", element: <ClientList /> },
+          { path: "/projects/list", element: <ProjectList /> },
+          { path: "/projects/assigned", element: <AssignedProjects /> },
+          { path: "/projects/assign/:id", element: <AssignProject /> },
+          { path: "/projects/kanban/:projectId", element: <ProjectKanban /> }
+        ]
+      }
+    ]
+  },
+  { path: "/login", element: <Login /> },
+  { path: "/register", element: <Register /> }
+], {
+  future: {
+    v7_startTransition: true,
+    v7_relativeSplatPath: true
+  }
+});
+
 const AppRoutes = () => {
-  return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-
-      {/* Protected Routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<DashboardLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          
-          {/* Employee Routes */}
-          <Route path="/employee">
-            <Route path="profile" element={<Profile />} />
-            <Route path="myAttendance" element={<MyAttendance />} />
-            <Route path="LeaveApplication" element={<LeaveApplication />} />
-            <Route path="payslip" element={<PaySlip />} />
-          </Route>
-
-          {/* HRM Routes */}
-          <Route path="/hrm">
-            <Route path="employees" element={<Employees />} />
-            <Route path="departments" element={<Departments />} />
-            <Route path="positions" element={<Positions />} />
-            <Route path="attendance" element={<Attendance />} />
-            <Route path="leave" element={<Leave />} />
-            <Route path="payroll" element={<Payroll />} />
-          </Route>
-        </Route>
-      </Route>
-    </Routes>
-  );
+  return <RouterProvider router={router} />;
 };
 
 export default AppRoutes; 
