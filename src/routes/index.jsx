@@ -36,6 +36,7 @@ import ProjectKanban from '@/pages/projects/ProjectKanban';
 import Expenses from '@/pages/frm/Expenses';
 import PersonalLoans from '@/pages/frm/PersonalLoans';
 import OfficeLoans from '@/pages/frm/OfficeLoans';
+// import Profits from '@/pages/frm/Profits';
 
 const router = createBrowserRouter([
   {
@@ -64,7 +65,8 @@ const router = createBrowserRouter([
           // FRM Routes
           { path: "/frm/expenses", element: <Expenses /> },
           { path: "/frm/personal-loans", element: <PersonalLoans /> },
-          { path: "/frm/office-loans", element: <OfficeLoans /> }
+          { path: "/frm/office-loans", element: <OfficeLoans /> },
+          // { path: "/frm/profits", element: <Profits /> }
         ]
       }
     ]

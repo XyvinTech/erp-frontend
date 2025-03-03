@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect, useMemo } from 'react';
+import { useTable, usePagination } from 'react-table';
+import { PlusIcon, PencilIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import ExpenseForm from '../../components/modules/frm/ExpenseForm';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import frmService from '@/services/frmService';
@@ -35,6 +36,7 @@ const ExpenseList = () => {
       setLoading(true);
       const data = await frmService.getExpenses(filters);
       setExpenses(data);
+      calculateStats(data);
     } catch (error) {
       toast.error(error.message || 'Failed to fetch expenses');
     } finally {
@@ -42,7 +44,7 @@ const ExpenseList = () => {
     }
   };
 
-  const calculateStats = (expenses) => {
+  const calculateStats = (expensesData) => {
     const newStats = {
       totalAmount: 0,
       totalCount: 0,
@@ -52,7 +54,7 @@ const ExpenseList = () => {
       pendingCount: 0
     };
 
-    expenses.forEach(expense => {
+    expensesData.forEach(expense => {
       newStats.totalAmount += expense.amount;
       newStats.totalCount += 1;
 
@@ -70,52 +72,57 @@ const ExpenseList = () => {
 
   useEffect(() => {
     fetchExpenses();
-    calculateStats(expenses);
   }, [filters]);
 
   const handleSubmit = async (data) => {
     try {
       if (editingExpense) {
-        // Remove any unnecessary fields and empty values
-        const { _id, status, submittedBy, approvedBy, createdAt, updatedAt, __v, ...updateFields } = data;
+        const { 
+          _id, 
+          submittedBy, 
+          approvedBy, 
+          createdAt, 
+          updatedAt, 
+          __v, 
+          expenseNumber,
+          ...updateFields 
+        } = data;
         
-        // Create FormData for file upload
         const formData = new FormData();
         
-        // Add all fields to FormData
         Object.entries(updateFields).forEach(([key, value]) => {
           if (key === 'documents') {
-            // Handle file uploads
             if (value && value.length) {
               for (let i = 0; i < value.length; i++) {
-                formData.append('documents', value[i]);
+                if (value[i] instanceof File) {
+                  formData.append('documents', value[i]);
+                }
               }
             }
-          } else if (value !== undefined && value !== '') {
-            formData.append(key, value);
-          }
-        });
-        
-        await frmService.updateExpense(editingExpense._id, formData);
-        toast.success('Expense updated successfully');
-      } else {
-        // Create FormData for new expense
-        const formData = new FormData();
-        
-        // Add all fields to FormData
-        Object.entries(data).forEach(([key, value]) => {
-          if (key === 'documents') {
-            // Handle file uploads
-            if (value && value.length) {
-              for (let i = 0; i < value.length; i++) {
-                formData.append('documents', value[i]);
-              }
+          } else {
+            if (key === 'amount') {
+              formData.append(key, Number(value) || 0);
+            } else {
+              formData.append(key, value === null ? '' : value);
             }
-          } else if (value !== undefined && value !== '') {
-            formData.append(key, value);
           }
         });
 
+        await frmService.updateExpense(editingExpense._id, formData);
+        toast.success('Expense updated successfully');
+      } else {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+          if (key === 'documents') {
+            if (value && value.length) {
+              for (let i = 0; i < value.length; i++) {
+                formData.append('documents', value[i]);
+              }
+            }
+          } else if (value !== undefined && value !== '') {
+            formData.append(key, value);
+          }
+        });
         await frmService.createExpense(formData);
         toast.success('Expense created successfully');
       }
@@ -129,19 +136,15 @@ const ExpenseList = () => {
   };
 
   const handleEdit = (expense) => {
-    // Format the expense data for the form
     const formattedExpense = {
       description: expense.description,
       amount: expense.amount,
       date: new Date(expense.date).toISOString().split('T')[0],
       category: expense.category,
-      notes: expense.notes || ''
+      notes: expense.notes || '',
+      status: expense.status
     };
-    // Store the ID separately in the editingExpense state
-    setEditingExpense({
-      ...formattedExpense,
-      _id: expense._id
-    });
+    setEditingExpense({ ...formattedExpense, _id: expense._id });
     setShowExpenseForm(true);
   };
 
@@ -169,102 +172,132 @@ const ExpenseList = () => {
     }).format(amount);
   };
 
+  const columns = useMemo(
+    () => [
+      { Header: 'Expense No.', accessor: 'expenseNumber' },
+      { Header: 'Description', accessor: 'description' },
+      {
+        Header: 'Amount',
+        accessor: 'amount',
+        Cell: ({ value }) => formatCurrency(value)
+      },
+      {
+        Header: 'Date',
+        accessor: 'date',
+        Cell: ({ value }) => format(new Date(value), 'MMM d, yyyy')
+      },
+      { Header: 'Category', accessor: 'category', Cell: ({ value }) => value.charAt(0).toUpperCase() + value.slice(1) },
+      {
+        Header: 'Status',
+        accessor: 'status',
+        Cell: ({ value }) => (
+          <span
+            className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+              value === 'Approved' ? 'bg-green-100 text-green-800' :
+              value === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            }`}
+          >
+            {value}
+          </span>
+        )
+      },
+      {
+        Header: 'Actions',
+        Cell: ({ row }) => (
+          <div className="flex justify-end space-x-2">
+            <button onClick={() => handleEdit(row.original)} className="text-black hover:text-gray-800">
+              <PencilIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <button onClick={() => handleDelete(row.original)} className="text-red-600 hover:text-red-900">
+              <TrashIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
+        )
+      }
+    ],
+    []
+  );
+
+  const data = useMemo(() => expenses, [expenses]);
+
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    page,
+    prepareRow,
+    canPreviousPage,
+    canNextPage,
+    pageOptions,
+    pageCount,
+    gotoPage,
+    nextPage,
+    previousPage,
+    setPageSize,
+    state: { pageIndex, pageSize }
+  } = useTable(
+    {
+      columns,
+      data,
+      initialState: { pageIndex: 0, pageSize: 10 }
+    },
+    usePagination
+  );
+
   const renderMobileView = () => (
     <div className="space-y-4 lg:hidden">
-      {expenses.map((expense) => (
-        <ExpenseCard
-          key={expense._id}
-          expense={expense}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          formatCurrency={formatCurrency}
-        />
-      ))}
+      {page.map((row) => {
+        prepareRow(row);
+        return (
+          <ExpenseCard
+            key={row.original._id}
+            expense={row.original}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            formatCurrency={formatCurrency}
+          />
+        );
+      })}
     </div>
   );
 
   const renderDesktopView = () => (
-    <div className="hidden lg:block">
-      <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-        <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-          <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                    Expense No.
+    <div className="hidden lg:block overflow-x-auto">
+      <div className="inline-block min-w-full align-middle">
+        <table className="min-w-full divide-y divide-gray-300" {...getTableProps()}>
+          <thead className="bg-gray-50">
+            {headerGroups.map(headerGroup => (
+              <tr {...headerGroup.getHeaderGroupProps()}>
+                {headerGroup.headers.map(column => (
+                  <th
+                    {...column.getHeaderProps()}
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  >
+                    {column.render('Header')}
                   </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Description
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Amount
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Date
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Category
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Status
-                  </th>
-                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {expenses.map((expense) => (
-                  <tr key={expense._id}>
-                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                      {expense.expenseNumber}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
-                      {expense.description}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                      {formatCurrency(expense.amount)}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                      {format(new Date(expense.date), 'MMM d, yyyy')}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 capitalize">
-                      {expense.category}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                      <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                        expense.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                        expense.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {expense.status}
-                      </span>
-                    </td>
-                    <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                      {expense.status === 'Pending' && (
-                        <div className="flex justify-end space-x-2">
-                          <button
-                            onClick={() => handleEdit(expense)}
-                            className="text-black hover:text-gray-800"
-                          >
-                            <PencilIcon className="h-5 w-5" aria-hidden="true" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(expense)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <TrashIcon className="h-5 w-5" aria-hidden="true" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </tr>
+            ))}
+          </thead>
+          <tbody className="divide-y divide-gray-200 bg-white" {...getTableBodyProps()}>
+            {page.map(row => {
+              prepareRow(row);
+              return (
+                <tr {...row.getRowProps()}>
+                  {row.cells.map(cell => (
+                    <td
+                      {...cell.getCellProps()}
+                      className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+                    >
+                      {cell.render('Cell')}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -294,7 +327,6 @@ const ExpenseList = () => {
 
       <ExpenseStats stats={stats} />
 
-      {/* Filters */}
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <select
           value={filters.status}
@@ -344,6 +376,51 @@ const ExpenseList = () => {
           <>
             {renderMobileView()}
             {renderDesktopView()}
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <button
+                  onClick={() => previousPage()}
+                  disabled={!canPreviousPage}
+                  className="btn btn-secondary inline-flex items-center"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => nextPage()}
+                  disabled={!canNextPage}
+                  className="btn btn-secondary inline-flex items-center"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing page{' '}
+                    <span className="font-medium">{pageIndex + 1}</span> of{' '}
+                    <span className="font-medium">{pageOptions.length}</span>
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => previousPage()}
+                    disabled={!canPreviousPage}
+                    className="btn btn-icon btn-secondary"
+                    title="Previous Page"
+                  >
+                    <ChevronLeftIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => nextPage()}
+                    disabled={!canNextPage}
+                    className="btn btn-icon btn-secondary"
+                    title="Next Page"
+                  >
+                    <ChevronRightIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </>
         )}
       </div>
@@ -369,4 +446,4 @@ const ExpenseList = () => {
   );
 };
 
-export default ExpenseList; 
+export default ExpenseList;

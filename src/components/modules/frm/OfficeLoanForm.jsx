@@ -203,7 +203,7 @@ const OfficeLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                           rows={3}
                           {...register('justification', { 
                             required: 'Justification is required',
-                            minLength: { value: 50, message: 'Justification must be at least 50 characters' }
+                            minLength: { value: 10, message: 'Justification must be at least 10 characters' }
                           })}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         />
@@ -294,7 +294,7 @@ const OfficeLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                           type="file"
                           id="documents"
                           multiple
-                          {...register('documents', { required: 'At least one document is required' })}
+                          {...register('documents')}
                           className="mt-1 block w-full text-sm text-gray-500
                             file:mr-4 file:py-2 file:px-4
                             file:rounded-md file:border-0

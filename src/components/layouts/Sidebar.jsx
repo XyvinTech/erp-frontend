@@ -9,7 +9,11 @@ import {
   BriefcaseIcon,
   ClockIcon,
   CalendarIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  CurrencyDollarIcon,
+  ReceiptPercentIcon,
+  DocumentTextIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -24,6 +28,16 @@ const navigation = [
       { name: 'Attendance', href: '/hrm/attendance', icon: ClockIcon },
       { name: 'Leave', href: '/hrm/leave', icon: CalendarIcon },
       { name: 'Payroll', href: '/hrm/payroll', icon: BanknotesIcon },
+    ],
+  },
+  {
+    name: 'FRM',
+    icon: CurrencyDollarIcon,
+    children: [
+      { name: 'Expenses', href: '/frm/expenses', icon: ReceiptPercentIcon },
+      { name: 'Personal Loans', href: '/frm/personal-loans', icon: DocumentTextIcon },
+      { name: 'Office Loans', href: '/frm/office-loans', icon: BanknotesIcon },
+      { name: 'Profits', href: '/frm/profits', icon: ChartBarIcon },
     ],
   },
 ];

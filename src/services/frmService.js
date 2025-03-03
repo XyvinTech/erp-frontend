@@ -62,50 +62,24 @@ const getExpenseById = async (id) => {
   return response.data;
 };
 
-const updateExpense = async (id, expenseData) => {
+const updateExpense = async (id, formData) => {
   try {
-    // Log the incoming data for debugging
-    console.log('Updating expense with data:', {
-      id,
-      ...expenseData,
-      documents: expenseData.documents ? `${expenseData.documents.length} files` : 'no files'
+    const updateData = {};
+    
+    formData.forEach((value, key) => {
+      if (value !== '' && value !== null && value !== undefined) {
+        if (key === 'amount') {
+          updateData[key] = Number(value);
+        } else {
+          updateData[key] = value;
+        }
+      }
     });
 
-    // Create request data based on whether there are files
-    let requestData = expenseData;
-    let headers = { 'Content-Type': 'application/json' };
-
-    if (expenseData.documents?.length > 0) {
-      const formData = new FormData();
-      
-      // Append expense data
-      Object.keys(expenseData).forEach(key => {
-        if (key !== 'documents') {
-          formData.append(key, expenseData[key]);
-        }
-      });
-
-      // Append documents if any
-      Array.from(expenseData.documents).forEach(file => {
-        formData.append('documents', file);
-      });
-
-      requestData = formData;
-      headers = { 'Content-Type': 'multipart/form-data' };
-    } else {
-      // Remove empty documents array if no files
-      delete requestData.documents;
-    }
-
-    const response = await api.put(`${EXPENSE_URL}/${id}`, requestData, { headers });
+    const response = await api.put(`${EXPENSE_URL}/${id}`, updateData);
     return response.data;
   } catch (error) {
-    console.error('Expense update error details:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      headers: error.response?.headers
-    });
+    console.error('Expense update error details:', error);
     throw error;
   }
 };

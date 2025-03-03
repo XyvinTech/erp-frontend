@@ -1,4 +1,4 @@
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useForm } from 'react-hook-form';
@@ -19,55 +19,66 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
       date: new Date().toISOString().split('T')[0],
       category: '',
       notes: '',
-      documents: []
+      documents: [],
+      status: 'Pending'
     }
   });
 
-  // Reset form when initialData changes or form is opened/closed
+  const [canUpdateStatus, setCanUpdateStatus] = useState(false);
+
   useEffect(() => {
     if (open) {
       if (initialData) {
-        // Set form values from initialData
         Object.keys(initialData).forEach(key => {
-          if (key === 'documents') return; // Skip documents as they can't be edited
-          setValue(key, initialData[key]);
+          if (key !== 'documents') {
+            setValue(key, initialData[key]);
+          }
         });
       } else {
-        // Reset to default values for new expense
         reset({
           description: '',
           amount: '',
           date: new Date().toISOString().split('T')[0],
           category: '',
           notes: '',
-          documents: []
+          documents: [],
+          status: 'Pending'
         });
-        
-        // Fetch and set the next expense number
+
         const fetchNextExpenseNumber = async () => {
           try {
             const response = await frmService.getNextExpenseNumber();
             if (response.success && response.data?.expense?.expenseNumber) {
               setValue('expenseNumber', response.data.expense.expenseNumber);
             } else {
-              console.error('Invalid response format:', response);
-              toast.error('Failed to get expense number. Please try again.');
+              toast.error('Failed to get expense number.');
             }
           } catch (error) {
-            console.error('Error fetching next expense number:', error);
-            toast.error(error.message || 'Failed to get expense number. Please try again.');
-            setOpen(false); // Close the form if we can't get an expense number
+            toast.error(error.message || 'Failed to get expense number.');
+            setOpen(false);
           }
         };
         fetchNextExpenseNumber();
       }
     }
+
+    // Check user permissions when component mounts
+    const user = JSON.parse(localStorage.getItem('user'));
+    setCanUpdateStatus(
+      user?.permissions?.includes('UPDATE_EXPENSE_STATUS') || 
+      user?.role === 'admin'
+    );
   }, [open, initialData, setValue, reset, setOpen]);
 
   const handleFormSubmit = async (data) => {
     try {
-      await onSubmit(data);
-      reset(); // Reset form after successful submission
+      const formData = {
+        ...data,
+        documents: data.documents instanceof FileList ? Array.from(data.documents) : data.documents
+      };
+      
+      await onSubmit(formData);
+      reset();
     } catch (error) {
       console.error('Form submission error:', error);
     }
@@ -116,9 +127,9 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                     <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
                       {initialData ? 'Edit Expense' : 'Add New Expense'}
                     </Dialog.Title>
-                    
+
                     <form onSubmit={handleSubmit(handleFormSubmit)} className="mt-6 space-y-6">
-                      {!initialData && (
+                      {!initialData ? (
                         <div>
                           <label htmlFor="expenseNumber" className="block text-sm font-medium text-gray-700">
                             Expense Number
@@ -131,7 +142,7 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                             readOnly
                           />
                         </div>
-                      )}
+                      ) : null}
 
                       <div>
                         <label htmlFor="description" className="block text-sm font-medium text-gray-700">
@@ -157,7 +168,7 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                           id="amount"
                           step="0.01"
                           min="0"
-                          {...register('amount', { 
+                          {...register('amount', {
                             required: 'Amount is required',
                             min: { value: 0, message: 'Amount must be greater than 0' }
                           })}
@@ -203,6 +214,34 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                           <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
                         )}
                       </div>
+
+                      {(canUpdateStatus || !initialData) && (
+                        <div>
+                          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                            Status
+                          </label>
+                          <select
+                            id="status"
+                            {...register('status', { required: 'Status is required' })}
+                            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
+                              !canUpdateStatus && initialData ? 'bg-gray-100' : ''
+                            }`}
+                            disabled={!canUpdateStatus && initialData}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                          {errors.status && (
+                            <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
+                          )}
+                          {!canUpdateStatus && initialData && (
+                            <p className="mt-1 text-sm text-gray-500">
+                              You don't have permission to change the status
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       <div>
                         <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
@@ -265,4 +304,4 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
   );
 };
 
-export default ExpenseForm; 
+export default ExpenseForm;
