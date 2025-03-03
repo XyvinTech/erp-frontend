@@ -14,8 +14,20 @@ import {
   DocumentTextIcon,
   UserGroupIcon,
   FolderIcon,
+  CurrencyDollarIcon,
+  CreditCardIcon,
 } from '@heroicons/react/24/outline';
 import authService from '@/services/auth.service';
+
+const frmNavigation = {
+  name: 'Financial Management',
+  icon: BanknotesIcon,
+  children: [
+    { name: 'Expenses', href: '/frm/expenses', icon: CurrencyDollarIcon },
+    { name: 'Personal Loans', href: '/frm/personal-loans', icon: CreditCardIcon },
+    { name: 'Office Loans', href: '/frm/office-loans', icon: BanknotesIcon },
+  ],
+};
 
 const baseNavigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
@@ -79,6 +91,7 @@ const Sidebar = ({ open, setOpen }) => {
     navigation.push(hrmNavigation);
     navigation.push(clientsNavigation);
     navigation.push(projectsNavigation);
+    navigation.push(frmNavigation);
   }
 
   const toggleMenu = (menuName) => {

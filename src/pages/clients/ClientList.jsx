@@ -3,12 +3,15 @@ import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useClientStore } from '@/stores/clientStore';
 import { toast } from 'react-hot-toast';
 import ClientModal from '@/components/modules/ClientModal';
+import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal';
 
 const ClientList = () => {
   const { clients, fetchClients, deleteClient } = useClientStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState(null);
 
   useEffect(() => {
     const loadClients = async () => {
@@ -23,14 +26,22 @@ const ClientList = () => {
     loadClients();
   }, [fetchClients]);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this client?')) {
-      try {
-        await deleteClient(id);
-        toast.success('Client deleted successfully');
-      } catch (error) {
-        toast.error('Failed to delete client');
-      }
+  const handleDelete = async (client) => {
+    setClientToDelete(client);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!clientToDelete) return;
+    
+    try {
+      await deleteClient(clientToDelete._id);
+      toast.success('Client deleted successfully');
+      setDeleteModalOpen(false);
+      setClientToDelete(null);
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast.error('Failed to delete client');
     }
   };
 
@@ -98,7 +109,7 @@ const ClientList = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {clients.map((client) => (
-                  <tr key={client.id} className="hover:bg-gray-50">
+                  <tr key={client._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {client.name}
                     </td>
@@ -123,7 +134,7 @@ const ClientList = () => {
                           <PencilIcon className="h-5 w-5" aria-hidden="true" />
                         </button>
                         <button
-                          onClick={() => handleDelete(client.id)}
+                          onClick={() => handleDelete(client)}
                           className="text-red-600 hover:text-red-900"
                         >
                           <TrashIcon className="h-5 w-5" aria-hidden="true" />
@@ -152,6 +163,18 @@ const ClientList = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         client={selectedClient}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setClientToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Client"
+        message={`Are you sure you want to delete ${clientToDelete?.name}? This action cannot be undone.`}
+        itemName={clientToDelete?.name}
       />
     </>
   );
