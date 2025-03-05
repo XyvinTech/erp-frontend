@@ -3,6 +3,7 @@ import api from './api';
 const EXPENSE_URL = '/api/frm/expenses';
 const PERSONAL_LOAN_URL = '/api/frm/personal-loans';
 const OFFICE_LOAN_URL = '/api/frm/office-loans';
+const PROFIT_URL = '/api/frm/profits';
 
 // Expense Services
 const createExpense = async (expenseData) => {
@@ -333,6 +334,91 @@ const deleteOfficeLoan = async (id) => {
   return response.data;
 };
 
+const getProfits = async (filters = {}) => {
+  const response = await api.get(PROFIT_URL, { params: filters });
+  return response.data;
+};
+
+const getNextProfitNumber = async () => {
+  const response = await api.get(`${PROFIT_URL}/next-number`);
+  return response.data;
+};
+
+const createProfit = async (profitData) => {
+  try {
+    let requestData = profitData;
+    let headers = { 'Content-Type': 'application/json' };
+
+    if (profitData.documents?.length > 0) {
+      const formData = new FormData();
+      
+      // Append profit data
+      Object.keys(profitData).forEach(key => {
+        if (key !== 'documents') {
+          formData.append(key, profitData[key]);
+        }
+      });
+
+      // Append documents if any
+      Array.from(profitData.documents).forEach(file => {
+        formData.append('documents', file);
+      });
+
+      requestData = formData;
+      headers = { 'Content-Type': 'multipart/form-data' };
+    } else {
+      // Remove empty documents array if no files
+      delete requestData.documents;
+    }
+
+    const response = await api.post(PROFIT_URL, requestData, { headers });
+    return response.data;
+  } catch (error) {
+    console.error('Profit creation error:', error);
+    throw error;
+  }
+};
+
+const updateProfit = async (id, profitData) => {
+  try {
+    let requestData = profitData;
+    let headers = { 'Content-Type': 'application/json' };
+
+    if (profitData.documents?.length > 0) {
+      const formData = new FormData();
+      
+      // Append profit data
+      Object.keys(profitData).forEach(key => {
+        if (key !== 'documents') {
+          formData.append(key, profitData[key]);
+        }
+      });
+
+      // Append documents if any
+      Array.from(profitData.documents).forEach(file => {
+        formData.append('documents', file);
+      });
+
+      requestData = formData;
+      headers = { 'Content-Type': 'multipart/form-data' };
+    } else {
+      // Remove empty documents array if no files
+      delete requestData.documents;
+    }
+
+    const response = await api.put(`${PROFIT_URL}/${id}`, requestData, { headers });
+    return response.data;
+  } catch (error) {
+    console.error('Profit update error:', error);
+    throw error;
+  }
+};
+
+const deleteProfit = async (id) => {
+  const response = await api.delete(`${PROFIT_URL}/${id}`);
+  return response.data;
+};
+
 const frmService = {
   // Expense services
   createExpense,
@@ -362,7 +448,14 @@ const frmService = {
   processOfficeLoan,
   recordOfficeLoanPayment,
   getOfficeLoanStats,
-  deleteOfficeLoan
+  deleteOfficeLoan,
+
+  // Profit services
+  getProfits,
+  getNextProfitNumber,
+  createProfit,
+  updateProfit,
+  deleteProfit
 };
 
 export default frmService; 
