@@ -33,6 +33,7 @@ import AssignedProjects from '@/pages/projects/AssignedProjects';
 import ProjectKanban from '@/pages/projects/ProjectKanban';
 
 // FRM Pages
+import FRMDashboard from '@/pages/frm/Dashboard';
 import Expenses from '@/pages/frm/Expenses';
 import PersonalLoans from '@/pages/frm/PersonalLoans';
 import OfficeLoans from '@/pages/frm/OfficeLoans';
@@ -63,6 +64,7 @@ const router = createBrowserRouter([
           { path: "/projects/assign/:id", element: <AssignProject /> },
           { path: "/projects/kanban/:projectId", element: <ProjectKanban /> },
           // FRM Routes
+          { path: "/frm/dashboard", element: <FRMDashboard /> },
           { path: "/frm/expenses", element: <Expenses /> },
           { path: "/frm/personal-loans", element: <PersonalLoans /> },
           { path: "/frm/office-loans", element: <OfficeLoans /> },

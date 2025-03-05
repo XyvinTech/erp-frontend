@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ChevronDownIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import { Link, useLocation } from 'react-router-dom';
 import {
   HomeIcon,
@@ -23,6 +23,7 @@ const frmNavigation = {
   name: 'Financial Management',
   icon: BanknotesIcon,
   children: [
+    { name: 'Dashboard', href: '/frm/dashboard', icon: ChartBarIcon },
     { name: 'Expenses', href: '/frm/expenses', icon: CurrencyDollarIcon },
     { name: 'Personal Loans', href: '/frm/personal-loans', icon: CreditCardIcon },
     { name: 'Office Loans', href: '/frm/office-loans', icon: BanknotesIcon },

@@ -96,8 +96,17 @@ const processExpense = async (id, { status, notes }) => {
 };
 
 const getExpenseStats = async () => {
-  const response = await api.get(`${EXPENSE_URL}/stats/overview`);
-  return response.data;
+  try {
+    const response = await api.get(`${EXPENSE_URL}/stats`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching expense stats:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
+  }
 };
 
 // Get next expense number
@@ -221,8 +230,17 @@ const recordPersonalLoanPayment = async (id, paymentData) => {
 };
 
 const getPersonalLoanStats = async () => {
-  const response = await api.get(`${PERSONAL_LOAN_URL}/stats/overview`);
-  return response.data;
+  try {
+    const response = await api.get(`${PERSONAL_LOAN_URL}/stats/overview`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching personal loan stats:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
+  }
 };
 
 const deletePersonalLoan = async (id) => {
@@ -324,7 +342,11 @@ const getOfficeLoanStats = async () => {
     const response = await api.get(`${OFFICE_LOAN_URL}/stats/department`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching office loan stats:', error);
+    console.error('Error fetching office loan stats:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 };

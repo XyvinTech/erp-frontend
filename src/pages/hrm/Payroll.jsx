@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useTable, useSortBy } from 'react-table';
+import { useTable, useSortBy, usePagination } from 'react-table';
 import { toast } from 'react-hot-toast';
 import {
   PlusIcon,
@@ -12,6 +12,8 @@ import {
   ExclamationCircleIcon,
   PaperAirplaneIcon,
   ClockIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import useHrmStore from '../../store/hrm/useHrmStore';
 import * as hrmService from '../../services/hrm/hrmService';
@@ -184,14 +186,25 @@ const Payroll = () => {
     getTableProps,
     getTableBodyProps,
     headerGroups,
-    rows,
+    page,
     prepareRow,
+    canPreviousPage,
+    canNextPage,
+    pageOptions,
+    pageCount,
+    gotoPage,
+    nextPage,
+    previousPage,
+    setPageSize,
+    state: { pageIndex, pageSize }
   } = useTable(
     {
       columns,
       data,
+      initialState: { pageIndex: 0, pageSize: 10 }
     },
-    useSortBy
+    useSortBy,
+    usePagination
   );
 
   const handleEdit = (payroll) => {
@@ -320,7 +333,7 @@ const Payroll = () => {
                   })}
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white" {...getTableBodyProps()}>
-                  {rows.map(row => {
+                  {page.map(row => {
                     prepareRow(row);
                     const { key, ...rowProps } = row.getRowProps();
                     return (
@@ -342,6 +355,53 @@ const Payroll = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => previousPage()}
+                disabled={!canPreviousPage}
+                className="btn btn-secondary inline-flex items-center"
+              >
+                <ChevronLeftIcon className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => nextPage()}
+                disabled={!canNextPage}
+                className="btn btn-secondary inline-flex items-center"
+              >
+                <ChevronRightIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing page{' '}
+                  <span className="font-medium">{pageIndex + 1}</span> of{' '}
+                  <span className="font-medium">{pageOptions.length}</span>
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => previousPage()}
+                  disabled={!canPreviousPage}
+                  className="btn btn-icon btn-secondary"
+                  title="Previous Page"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => nextPage()}
+                  disabled={!canNextPage}
+                  className="btn btn-icon btn-secondary"
+                  title="Next Page"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
