@@ -4,7 +4,8 @@ const api = axios.create({
   baseURL: 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  timeout: 10000 // Add timeout
 });
 
 // Add request interceptor
@@ -44,7 +45,8 @@ api.interceptors.response.use(
     console.error('API Response Error:', {
       url: error.config?.url,
       status: error.response?.status,
-      message: error.response?.data?.message || error.message
+      message: error.response?.data?.message || error.message,
+      data: error.response?.data
     });
     
     if (error.response?.status === 401) {
@@ -52,7 +54,9 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
-    return Promise.reject(error);
+
+    // Return a rejected promise with the error response data or the error itself
+    return Promise.reject(error.response?.data || error);
   }
 );
 

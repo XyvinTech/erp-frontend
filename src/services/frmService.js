@@ -117,28 +117,51 @@ const getNextExpenseNumber = async () => {
 
 // Personal Loan Services
 const createPersonalLoan = async (loanData) => {
-  const formData = new FormData();
-  
-  Object.keys(loanData).forEach(key => {
-    if (key !== 'documents') {
-      if (typeof loanData[key] === 'object') {
-        formData.append(key, JSON.stringify(loanData[key]));
-      } else {
-        formData.append(key, loanData[key]);
-      }
+  try {
+    console.log('Loan Data:', loanData);
+    // Extract only the allowed fields
+    const allowedFields = {
+      purpose: loanData.purpose,
+      amount: loanData.amount,
+      term: loanData.term,
+      interestRate: loanData.interestRate,
+      employmentType: loanData.employmentType,
+      monthlyIncome: loanData.monthlyIncome,
+      monthlyPayment: loanData.monthlyPayment,
+      documents: loanData.documents
+    };
+
+    if (allowedFields.documents?.length > 0) {
+      const formData = new FormData();
+      const loanDataWithoutDocs = { ...allowedFields };
+      delete loanDataWithoutDocs.documents;
+      console.log('Loan Data without Docs:', loanDataWithoutDocs);
+      formData.append('data', JSON.stringify(loanDataWithoutDocs));
+      Array.from(allowedFields.documents).forEach((file, index) => {
+        console.log(`Appending file ${index}:`, file.name);
+        formData.append('documents', file);
+      });
+      console.log('Sending FormData to:', PERSONAL_LOAN_URL);
+      const response = await api.post(PERSONAL_LOAN_URL, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      console.log('Response:', response.data);
+      return response.data.data;
     }
-  });
-
-  if (loanData.documents) {
-    loanData.documents.forEach(file => {
-      formData.append('documents', file);
+    console.log('Sending JSON to:', PERSONAL_LOAN_URL);
+    const response = await api.post(PERSONAL_LOAN_URL, allowedFields, {
+      headers: { 'Content-Type': 'application/json' }
     });
+    console.log('Response:', response.data);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error Details:', {
+      message: error.message,
+      config: error.config,
+      response: error.response?.data
+    });
+    throw error.response?.data || error;
   }
-
-  const response = await api.post(PERSONAL_LOAN_URL, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
-  return response.data;
 };
 
 const getPersonalLoans = async (filters = {}) => {
@@ -152,28 +175,38 @@ const getPersonalLoanById = async (id) => {
 };
 
 const updatePersonalLoan = async (id, loanData) => {
-  const formData = new FormData();
-  
-  Object.keys(loanData).forEach(key => {
-    if (key !== 'documents') {
-      if (typeof loanData[key] === 'object') {
-        formData.append(key, JSON.stringify(loanData[key]));
-      } else {
-        formData.append(key, loanData[key]);
-      }
+  try {
+    // If there are documents, use FormData
+    if (loanData.documents?.length > 0) {
+      const formData = new FormData();
+      
+      // Create a copy of loan data without documents
+      const loanDataWithoutDocs = { ...loanData };
+      delete loanDataWithoutDocs.documents;
+      
+      // Append loan data as JSON string
+      formData.append('data', JSON.stringify(loanDataWithoutDocs));
+      
+      // Append documents
+      Array.from(loanData.documents).forEach(file => {
+        formData.append('documents', file);
+      });
+
+      const response = await api.put(`${PERSONAL_LOAN_URL}/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
     }
-  });
 
-  if (loanData.documents) {
-    loanData.documents.forEach(file => {
-      formData.append('documents', file);
+    // If no documents, send as JSON
+    const response = await api.put(`${PERSONAL_LOAN_URL}/${id}`, loanData, {
+      headers: { 'Content-Type': 'application/json' }
     });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating personal loan:', error);
+    throw error;
   }
-
-  const response = await api.put(`${PERSONAL_LOAN_URL}/${id}`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
-  return response.data;
 };
 
 const processPersonalLoan = async (id, { status, notes }) => {
@@ -191,30 +224,43 @@ const getPersonalLoanStats = async () => {
   return response.data;
 };
 
+const deletePersonalLoan = async (id) => {
+  const response = await api.delete(`${PERSONAL_LOAN_URL}/${id}`);
+  return response.data;
+};
+
 // Office Loan Services
 const createOfficeLoan = async (loanData) => {
-  const formData = new FormData();
-  
-  Object.keys(loanData).forEach(key => {
-    if (key !== 'documents') {
-      if (typeof loanData[key] === 'object') {
-        formData.append(key, JSON.stringify(loanData[key]));
-      } else {
-        formData.append(key, loanData[key]);
-      }
+  try {
+    // If there are documents, use FormData
+    if (loanData.documents?.length > 0) {
+      const formData = new FormData();
+      
+      // Append loan data as a JSON string
+      const loanDataWithoutDocs = { ...loanData };
+      delete loanDataWithoutDocs.documents;
+      formData.append('data', JSON.stringify(loanDataWithoutDocs));
+      
+      // Append documents
+      loanData.documents.forEach(file => {
+        formData.append('documents', file);
+      });
+
+      const response = await api.post(OFFICE_LOAN_URL, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
     }
-  });
 
-  if (loanData.documents) {
-    loanData.documents.forEach(file => {
-      formData.append('documents', file);
+    // If no documents, send as JSON
+    const response = await api.post(OFFICE_LOAN_URL, loanData, {
+      headers: { 'Content-Type': 'application/json' }
     });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating office loan:', error);
+    throw error;
   }
-
-  const response = await api.post(OFFICE_LOAN_URL, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
-  return response.data;
 };
 
 const getOfficeLoans = async (filters = {}) => {
@@ -228,28 +274,38 @@ const getOfficeLoanById = async (id) => {
 };
 
 const updateOfficeLoan = async (id, loanData) => {
-  const formData = new FormData();
-  
-  Object.keys(loanData).forEach(key => {
-    if (key !== 'documents') {
-      if (typeof loanData[key] === 'object') {
-        formData.append(key, JSON.stringify(loanData[key]));
-      } else {
-        formData.append(key, loanData[key]);
-      }
+  try {
+    // If there are documents, use FormData
+    if (loanData.documents?.length > 0) {
+      const formData = new FormData();
+      
+      // Create a copy of loan data without documents
+      const loanDataWithoutDocs = { ...loanData };
+      delete loanDataWithoutDocs.documents;
+
+      // Append loan data as JSON string
+      formData.append('data', JSON.stringify(loanDataWithoutDocs));
+      
+      // Append documents
+      Array.from(loanData.documents).forEach(file => {
+        formData.append('documents', file);
+      });
+
+      const response = await api.put(`${OFFICE_LOAN_URL}/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
     }
-  });
 
-  if (loanData.documents) {
-    loanData.documents.forEach(file => {
-      formData.append('documents', file);
+    // If no documents, send as JSON
+    const response = await api.put(`${OFFICE_LOAN_URL}/${id}`, loanData, {
+      headers: { 'Content-Type': 'application/json' }
     });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating office loan:', error);
+    throw error;
   }
-
-  const response = await api.put(`${OFFICE_LOAN_URL}/${id}`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
-  return response.data;
 };
 
 const processOfficeLoan = async (id, { status, notes, repaymentPlan }) => {
@@ -263,7 +319,17 @@ const recordOfficeLoanPayment = async (id, paymentData) => {
 };
 
 const getOfficeLoanStats = async () => {
-  const response = await api.get(`${OFFICE_LOAN_URL}/stats/department`);
+  try {
+    const response = await api.get(`${OFFICE_LOAN_URL}/stats/department`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching office loan stats:', error);
+    throw error;
+  }
+};
+
+const deleteOfficeLoan = async (id) => {
+  const response = await api.delete(`${OFFICE_LOAN_URL}/${id}`);
   return response.data;
 };
 
@@ -286,6 +352,7 @@ const frmService = {
   processPersonalLoan,
   recordPersonalLoanPayment,
   getPersonalLoanStats,
+  deletePersonalLoan,
 
   // Office Loan services
   createOfficeLoan,
@@ -294,7 +361,8 @@ const frmService = {
   updateOfficeLoan,
   processOfficeLoan,
   recordOfficeLoanPayment,
-  getOfficeLoanStats
+  getOfficeLoanStats,
+  deleteOfficeLoan
 };
 
 export default frmService; 

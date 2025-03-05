@@ -2,6 +2,7 @@ import { Fragment, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useForm } from 'react-hook-form';
+import { toast } from 'react-hot-toast';
 
 const PersonalLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
   const {
@@ -19,7 +20,7 @@ const PersonalLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
       interestRate: '',
       employmentType: '',
       monthlyIncome: '',
-      existingLoans: [],
+      status: 'Pending',
       documents: []
     }
   });
@@ -56,33 +57,35 @@ const PersonalLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
 
   const handleFormSubmit = async (data) => {
     try {
-      const formData = new FormData();
-      
-      // Append text fields
-      Object.keys(data).forEach(key => {
-        if (key !== 'documents') {
-          if (key === 'existingLoans' && data[key].length) {
-            formData.append(key, JSON.stringify(data[key]));
-          } else {
-            formData.append(key, data[key]);
-          }
-        }
-      });
-      
-      // Append documents
-      if (data.documents?.length) {
+      const loanData = {
+        purpose: data.purpose,
+        amount: parseFloat(data.amount),
+        term: parseInt(data.term),
+        interestRate: parseFloat(data.interestRate),
+        employmentType: data.employmentType,
+        monthlyIncome: parseFloat(data.monthlyIncome),
+        monthlyPayment: parseFloat(calculateMonthlyPayment()),
+        status: data.status,
+        documents: data.documents || []
+      };
+
+      if (data.documents?.length > 0) {
+        const formData = new FormData();
+        const loanDataWithoutDocs = { ...loanData };
+        delete loanDataWithoutDocs.documents;
+        formData.append('data', JSON.stringify(loanDataWithoutDocs));
         Array.from(data.documents).forEach(file => {
           formData.append('documents', file);
         });
+        await onSubmit(formData);
+      } else {
+        await onSubmit(loanData);
       }
-
-      // Add calculated monthly payment
-      formData.append('monthlyPayment', calculateMonthlyPayment());
-
-      await onSubmit(formData);
       reset();
+      setOpen(false); // Close modal on success
     } catch (error) {
       console.error('Form submission error:', error);
+      toast.error(error.message || 'Failed to submit loan application');
     }
   };
 
@@ -233,10 +236,12 @@ const PersonalLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                         </label>
                         <select
                           id="employmentType"
-                          {...register('employmentType', { required: 'Employment type is required' })}
+                          {...register('employmentType', { 
+                            required: 'Employment type is required'
+                          })}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         >
-                          <option value="">Select Employment Type</option>
+                          <option value="">Select employment type</option>
                           <option value="Full-time">Full-time</option>
                           <option value="Part-time">Part-time</option>
                           <option value="Contract">Contract</option>
@@ -263,6 +268,26 @@ const PersonalLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                         />
                         {errors.monthlyIncome && (
                           <p className="mt-1 text-sm text-red-600">{errors.monthlyIncome.message}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                          Status
+                        </label>
+                        <select
+                          id="status"
+                          {...register('status', { 
+                            required: 'Status is required'
+                          })}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Approved">Approved</option>
+                          <option value="Rejected">Rejected</option>
+                        </select>
+                        {errors.status && (
+                          <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
                         )}
                       </div>
 

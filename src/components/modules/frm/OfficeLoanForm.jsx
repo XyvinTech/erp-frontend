@@ -2,6 +2,7 @@ import { Fragment, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useForm } from 'react-hook-form';
+import { format } from 'date-fns';
 
 const OfficeLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
   const {
@@ -32,21 +33,24 @@ const OfficeLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
 
   useEffect(() => {
     if (initialData) {
-      Object.keys(initialData).forEach(key => {
-        if (key === 'documents') {
-          // Handle documents separately if needed
-          return;
-        }
-        if (key === 'repaymentPlan') {
-          Object.keys(initialData[key]).forEach(planKey => {
-            setValue(`repaymentPlan.${planKey}`, initialData[key][planKey]);
-          });
-          return;
-        }
-        setValue(key, initialData[key]);
-      });
+      // Reset form first
+      reset();
+      
+      // Set basic fields
+      setValue('purpose', initialData.purpose);
+      setValue('amount', initialData.amount);
+      setValue('department', initialData.department);
+      setValue('justification', initialData.justification);
+      
+      // Set repayment plan fields
+      if (initialData.repaymentPlan) {
+        setValue('repaymentPlan.installments', initialData.repaymentPlan.installments);
+        setValue('repaymentPlan.frequency', initialData.repaymentPlan.frequency);
+        setValue('repaymentPlan.startDate', initialData.repaymentPlan.startDate ? 
+          format(new Date(initialData.repaymentPlan.startDate), 'yyyy-MM-dd') : '');
+      }
     }
-  }, [initialData, setValue]);
+  }, [initialData, setValue, reset]);
 
   const calculateInstallmentAmount = () => {
     if (!amount || !installments) return 0;
@@ -60,28 +64,19 @@ const OfficeLoanForm = ({ open, setOpen, onSubmit, initialData = null }) => {
 
   const handleFormSubmit = async (data) => {
     try {
-      const formData = new FormData();
-      
-      // Append text fields
-      Object.keys(data).forEach(key => {
-        if (key !== 'documents') {
-          if (key === 'repaymentPlan') {
-            formData.append(key, JSON.stringify(data[key]));
-          } else {
-            formData.append(key, data[key]);
-          }
-        }
-      });
-      
-      // Append documents
-      if (data.documents?.length) {
-        Array.from(data.documents).forEach(file => {
-          formData.append('documents', file);
-        });
-      }
-
-      // Add calculated installment amount
-      formData.append('installmentAmount', calculateInstallmentAmount());
+      // Create a plain object with the form data
+      const formData = {
+        purpose: data.purpose,
+        amount: data.amount,
+        department: data.department,
+        justification: data.justification,
+        repaymentPlan: {
+          installments: parseInt(data.repaymentPlan.installments),
+          frequency: data.repaymentPlan.frequency,
+          startDate: data.repaymentPlan.startDate
+        },
+        documents: Array.from(data.documents || [])
+      };
 
       await onSubmit(formData);
       reset();
