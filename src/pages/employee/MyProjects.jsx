@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTable, usePagination } from 'react-table';
 import { useMemo } from 'react';
 
-const ProjectList = () => {
+const MyProjects = () => {
   const navigate = useNavigate();
   const { projects, fetchProjects, deleteProject } = useProjectStore();
   const { clients, fetchClients } = useClientStore();
@@ -86,13 +86,8 @@ const ProjectList = () => {
       {
         Header: 'Name',
         accessor: 'name',
-        Cell: ({ value, row }) => (
-          <button
-            onClick={() => navigate(`/projects/details/${row.original._id || row.original.id}`)}
-            className="text-sm font-medium text-gray-900 hover:text-primary-600"
-          >
-            {value}
-          </button>
+        Cell: ({ value }) => (
+          <span className="text-sm font-medium text-gray-900">{value}</span>
         )
       },
       {
@@ -151,26 +146,11 @@ const ProjectList = () => {
           return (
             <div className="flex space-x-2">
               <button
-                onClick={() => navigate(`/projects/kanban/${projectId}`)}
+                onClick={() => navigate(`/employee/projects/kanban/${projectId}`)}
                 className="text-black hover:text-gray-800"
                 title="View Kanban Board"
               >
                 <Squares2X2Icon className="h-5 w-5" aria-hidden="true" />
-              </button>
-              
-              <button
-                onClick={() => handleEdit(row.original)}
-                className="text-black hover:text-gray-800"
-                title="Edit Project"
-              >
-                <PencilIcon className="h-5 w-5" aria-hidden="true" />
-              </button>
-              <button
-                onClick={() => handleDelete(projectId)}
-                className="text-red-600 hover:text-red-900"
-                title="Delete Project"
-              >
-                <TrashIcon className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
           );
@@ -347,4 +327,4 @@ const ProjectList = () => {
   );
 };
 
-export default ProjectList; 
+export default MyProjects; 

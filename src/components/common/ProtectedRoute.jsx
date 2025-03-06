@@ -15,9 +15,16 @@ const ProtectedRoute = () => {
   const path = location.pathname.toLowerCase();
   const role = currentUser?.role;
 
-  // Regular employees can only access dashboard and profile
+  // Regular employees can access dashboard, profile, and project-related routes
   if (role === 'employee') {
-    if (!path.includes('/dashboard') && !path.includes('/profile') && path !== '/') {
+    const allowedPaths = [
+      '/dashboard',
+      '/profile',
+      '/projects',
+      '/employee'
+    ];
+    
+    if (!allowedPaths.some(allowedPath => path.startsWith(allowedPath)) && path !== '/') {
       return <Navigate to="/" replace />;
     }
   }

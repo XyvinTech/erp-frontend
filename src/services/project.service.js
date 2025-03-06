@@ -21,12 +21,12 @@ export const projectService = {
 
   getProjects: async () => {
     try {
-      console.log('Fetching projects...');
-      const response = await api.get(BASE_URL);
+      console.log('Fetching projects with all details...');
+      const response = await api.get(`${BASE_URL}?populate=client,team,tasks,tasks.assignee,tasks.comments,tasks.attachments&sort=-createdAt`);
       console.log('Get projects raw response:', response);
       const data = response.data || response;
       console.log('Get projects data:', data);
-      return Array.isArray(data) ? data : [];
+      return Array.isArray(data) ? data : data.projects || [];
     } catch (error) {
       console.error('Error fetching projects:', error);
       console.error('Error response:', error.response);
@@ -36,7 +36,7 @@ export const projectService = {
 
   getProject: async (id) => {
     try {
-      const response = await api.get(`${BASE_URL}/${id}`);
+      const response = await api.get(`${BASE_URL}/${id}?populate=client,team,tasks`);
       console.log(`Get project ${id} response:`, response);
       const data = response.data || response;
       console.log(`Get project ${id} data:`, data);
@@ -86,6 +86,19 @@ export const projectService = {
       return data;
     } catch (error) {
       console.error('Error assigning employees:', error);
+      throw error.response?.data || { message: error.message };
+    }
+  },
+
+  getProjectWithDetails: async (id) => {
+    try {
+      const response = await api.get(`${BASE_URL}/${id}/details`);
+      console.log(`Get project details ${id} response:`, response);
+      const data = response.data || response;
+      console.log(`Get project details ${id} data:`, data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching project details:', error);
       throw error.response?.data || { message: error.message };
     }
   }

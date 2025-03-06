@@ -479,7 +479,7 @@ const TaskDetailModal = ({ task, onClose, onTaskUpdate, employees }) => {
                                 type="button"
                                 onClick={() => handleAttachmentSubmit('link')}
                                 disabled={isSubmitting || !attachmentUrl}
-                                className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50"
+                                className="inline-flex items-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50"
                               >
                                 {isSubmitting ? 'Adding...' : 'Add Link'}
                               </button>

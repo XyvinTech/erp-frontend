@@ -44,6 +44,7 @@ const employeeNavigation = {
     { name: 'Leave Application', href: '/employee/LeaveApplication', icon: CalendarIcon },
     { name: 'My Attendance', href: '/employee/myAttendance', icon: ClockIcon },
     { name: 'Pay Slip', href: '/employee/payslip', icon: DocumentTextIcon },
+    { name: 'My Projects', href: '/employee/projects', icon: FolderIcon },
   ],
 };
 
@@ -74,7 +75,7 @@ const projectsNavigation = {
   icon: FolderIcon,
   children: [
     { name: 'All Projects', href: '/projects/list', icon: FolderIcon },
-    { name: 'Assigned Projects', href: '/projects/assigned', icon: UserGroupIcon },
+    { name: 'Project Details', href: '/projects/details/:id', icon: DocumentTextIcon },
   ],
 };
 

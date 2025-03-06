@@ -15,6 +15,8 @@ import EmployeeDashboard from '@/pages/employee/EmployeeDashboard';
 import PaySlip from '@/pages/employee/PaySlip';
 import LeaveApplication from '@/pages/employee/LeaveApplication';
 import MyAttendance from '@/pages/employee/MyAttendance';
+import MyProjects from '@/pages/employee/MyProjects';
+import MyProjectKanban from '@/pages/employee/MyProjectKanban';
 
 // HRM Pages
 import HRMDashboard from '@/pages/hrm/Dashboard';
@@ -30,9 +32,10 @@ import ClientList from '@/pages/clients/ClientList';
 
 // Project Management Pages
 import ProjectList from '@/pages/projects/ProjectList';
+import ProjectKanban from '@/pages/projects/ProjectKanban';
 import AssignProject from '@/pages/projects/AssignProject';
 import AssignedProjects from '@/pages/projects/AssignedProjects';
-import ProjectKanban from '@/pages/projects/ProjectKanban';
+import ProjectDetails from '@/pages/projects/ProjectDetails';
 
 // FRM Pages
 import FRMDashboard from '@/pages/frm/Dashboard';
@@ -76,6 +79,14 @@ const router = createBrowserRouter([
               {
                 path: 'payslip',
                 element: <PaySlip />
+              },
+              {
+                path: 'projects',
+                element: <MyProjects />
+              },
+              {
+                path: 'projects/kanban/:projectId',
+                element: <MyProjectKanban />
               }
             ]
           },
@@ -136,12 +147,12 @@ const router = createBrowserRouter([
                 element: <AssignProject />
               },
               {
-                path: 'assigned',
-                element: <AssignedProjects />
+                path: 'kanban/:projectId',
+                element: <ProjectKanban />
               },
               {
-                path: 'kanban',
-                element: <ProjectKanban />
+                path: 'details/:projectId',
+                element: <ProjectDetails />
               }
             ]
           },

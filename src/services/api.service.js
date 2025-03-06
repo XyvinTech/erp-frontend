@@ -45,7 +45,7 @@ class ApiService {
     // Add response interceptor
     this.api.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
         console.error('API Error Details:', {
           url: error.config?.url,
           method: error.config?.method,
@@ -53,6 +53,35 @@ class ApiService {
           data: error.response?.data,
           headers: error.config?.headers
         });
+        
+        // If token is expired or invalid, try to refresh it
+        if (error.response?.status === 401) {
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (refreshToken) {
+            try {
+              const response = await axios.post(`${API_URL}/api/auth/refresh-token`, {
+                refreshToken
+              });
+              const { token } = response.data;
+              localStorage.setItem('token', token);
+              
+              // Retry the original request
+              error.config.headers.Authorization = `Bearer ${token}`;
+              return this.api.request(error.config);
+            } catch (refreshError) {
+              console.error('Token refresh failed:', refreshError);
+              // Store the current URL before redirecting
+              localStorage.setItem('redirectUrl', window.location.pathname);
+              authService.logout();
+              window.location.href = '/login';
+            }
+          } else {
+            // Store the current URL before redirecting
+            localStorage.setItem('redirectUrl', window.location.pathname);
+            authService.logout();
+            window.location.href = '/login';
+          }
+        }
         
         this.handleError(error);
         return Promise.reject(error);
