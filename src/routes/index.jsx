@@ -11,17 +11,19 @@ import Dashboard from '@/pages/Dashboard';
 
 // Employee Pages
 import Profile from '@/pages/employee/Profile';
+import EmployeeDashboard from '@/pages/employee/EmployeeDashboard';
+import PaySlip from '@/pages/employee/PaySlip';
+import LeaveApplication from '@/pages/employee/LeaveApplication';
+import MyAttendance from '@/pages/employee/MyAttendance';
 
 // HRM Pages
+import HRMDashboard from '@/pages/hrm/Dashboard';
 import Employees from '@/pages/hrm/Employees';
 import Departments from '@/pages/hrm/Departments';
 import Positions from '@/pages/hrm/Positions';
 import Attendance from '@/pages/hrm/Attendance';
 import Leave from '@/pages/hrm/Leave';
 import Payroll from '@/pages/hrm/Payroll';
-import PaySlip from '@/pages/employee/PaySlip';
-import LeaveApplication from '@/pages/employee/LeaveApplication';
-import MyAttendance from '@/pages/employee/MyAttendance';
 
 // Client Pages
 import ClientList from '@/pages/clients/ClientList';
@@ -41,40 +43,146 @@ import Profits from '@/pages/frm/Profits';
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <ProtectedRoute />,
     children: [
       {
         element: <DashboardLayout />,
         children: [
-          { path: "/", element: <Dashboard /> },
-          { path: "/employee/profile", element: <Profile /> },
-          { path: "/employee/myAttendance", element: <MyAttendance /> },
-          { path: "/employee/LeaveApplication", element: <LeaveApplication /> },
-          { path: "/employee/payslip", element: <PaySlip /> },
-          { path: "/hrm/employees", element: <Employees /> },
-          { path: "/hrm/departments", element: <Departments /> },
-          { path: "/hrm/positions", element: <Positions /> },
-          { path: "/hrm/attendance", element: <Attendance /> },
-          { path: "/hrm/leave", element: <Leave /> },
-          { path: "/hrm/payroll", element: <Payroll /> },
-          { path: "/clients/list", element: <ClientList /> },
-          { path: "/projects/list", element: <ProjectList /> },
-          { path: "/projects/assigned", element: <AssignedProjects /> },
-          { path: "/projects/assign/:id", element: <AssignProject /> },
-          { path: "/projects/kanban/:projectId", element: <ProjectKanban /> },
+          {
+            path: '/',
+            element: <Dashboard />
+          },
+          // Employee Routes
+          {
+            path: 'employee',
+            children: [
+              {
+                path: 'dashboard',
+                element: <EmployeeDashboard />
+              },
+              {
+                path: 'profile',
+                element: <Profile />
+              },
+              {
+                path: 'LeaveApplication',
+                element: <LeaveApplication />
+              },
+              {
+                path: 'myAttendance',
+                element: <MyAttendance />
+              },
+              {
+                path: 'payslip',
+                element: <PaySlip />
+              }
+            ]
+          },
+          // HRM Routes
+          {
+            path: 'hrm',
+            children: [
+              {
+                path: 'dashboard',
+                element: <HRMDashboard />
+              },
+              {
+                path: 'employees',
+                element: <Employees />
+              },
+              {
+                path: 'departments',
+                element: <Departments />
+              },
+              {
+                path: 'positions',
+                element: <Positions />
+              },
+              {
+                path: 'attendance',
+                element: <Attendance />
+              },
+              {
+                path: 'leave',
+                element: <Leave />
+              },
+              {
+                path: 'payroll',
+                element: <Payroll />
+              }
+            ]
+          },
+          // Client Routes
+          {
+            path: 'clients',
+            children: [
+              {
+                path: 'list',
+                element: <ClientList />
+              }
+            ]
+          },
+          // Project Routes
+          {
+            path: 'projects',
+            children: [
+              {
+                path: 'list',
+                element: <ProjectList />
+              },
+              {
+                path: 'assign',
+                element: <AssignProject />
+              },
+              {
+                path: 'assigned',
+                element: <AssignedProjects />
+              },
+              {
+                path: 'kanban',
+                element: <ProjectKanban />
+              }
+            ]
+          },
           // FRM Routes
-          { path: "/frm/dashboard", element: <FRMDashboard /> },
-          { path: "/frm/expenses", element: <Expenses /> },
-          { path: "/frm/personal-loans", element: <PersonalLoans /> },
-          { path: "/frm/office-loans", element: <OfficeLoans /> },
-          { path: "/frm/profits", element: <Profits /> }
+          {
+            path: 'frm',
+            children: [
+              {
+                path: 'dashboard',
+                element: <FRMDashboard />
+              },
+              {
+                path: 'expenses',
+                element: <Expenses />
+              },
+              {
+                path: 'personal-loans',
+                element: <PersonalLoans />
+              },
+              {
+                path: 'office-loans',
+                element: <OfficeLoans />
+              },
+              {
+                path: 'profits',
+                element: <Profits />
+              }
+            ]
+          }
         ]
       }
     ]
   },
-  { path: "/login", element: <Login /> },
-  { path: "/register", element: <Register /> }
+  {
+    path: 'login',
+    element: <Login />
+  },
+  {
+    path: 'register',
+    element: <Register />
+  }
 ], {
   future: {
     v7_startTransition: true,

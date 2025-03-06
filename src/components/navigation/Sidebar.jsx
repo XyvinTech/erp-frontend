@@ -39,6 +39,7 @@ const employeeNavigation = {
   name: 'Employee',
   icon: UserCircleIcon,
   children: [
+    { name: 'Dashboard', href: '/employee/dashboard', icon: ChartBarIcon },
     { name: 'Profile', href: '/employee/profile', icon: UserCircleIcon },
     { name: 'Leave Application', href: '/employee/LeaveApplication', icon: CalendarIcon },
     { name: 'My Attendance', href: '/employee/myAttendance', icon: ClockIcon },
@@ -50,6 +51,7 @@ const hrmNavigation = {
   name: 'HRM',
   icon: UsersIcon,
   children: [
+    { name: 'Dashboard', href: '/hrm/dashboard', icon: ChartBarIcon },
     { name: 'Employees', href: '/hrm/employees', icon: UsersIcon },
     { name: 'Departments', href: '/hrm/departments', icon: BuildingOfficeIcon },
     { name: 'Positions', href: '/hrm/positions', icon: BriefcaseIcon },
