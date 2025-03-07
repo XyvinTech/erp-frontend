@@ -9,7 +9,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/select.jsx';
 import { Textarea } from '@/components/ui/textarea';
 import {
   CalendarIcon,

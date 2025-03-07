@@ -27,7 +27,7 @@ const frmNavigation = {
     { name: 'Expenses', href: '/frm/expenses', icon: CurrencyDollarIcon },
     { name: 'Personal Loans', href: '/frm/personal-loans', icon: CreditCardIcon },
     { name: 'Office Loans', href: '/frm/office-loans', icon: BanknotesIcon },
-    { name: "Profit", href: '/frm/profits', icon: FolderIcon },
+    { name: "Revenue", href: '/frm/profits', icon: FolderIcon },
   ],
 };
 
