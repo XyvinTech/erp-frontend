@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   UsersIcon,
   BuildingOfficeIcon,
@@ -7,27 +7,132 @@ import {
 } from '@heroicons/react/24/outline';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import useDashboardStore from '@/stores/dashboardStore';
+import useHrmStore from '../store/hrm/useHrmStore';
 
 const Dashboard = () => {
   const {
-    stats,
-    loading,
-    fetchStats,
-    fetchAttendance,
-    fetchDepartments,
-  } = useDashboardStore();
+    events,
+    eventsLoading,
+    eventsError,
+    fetchEvents,
+  } = useHrmStore();
 
   // State for selected month in calendar
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarApi, setCalendarApi] = useState(null);
 
   useEffect(() => {
-    fetchStats();
-    fetchAttendance();
-    fetchDepartments();
+    fetchEvents();
+  }, [fetchEvents]);
+
+  // Helper function to get event color based on status
+  const getEventColor = useCallback((status) => {
+    switch (status?.toLowerCase()) {
+      case 'upcoming':
+        return '#36A2EB';
+      case 'ongoing':
+        return '#FFCE56';
+      case 'completed':
+        return '#4BC0C0';
+      default:
+        return '#36A2EB';
+    }
   }, []);
 
-  if (loading.stats || loading.attendance || loading.departments) {
+  // Transform events for calendar display
+  const calendarEvents = useCallback(() => {
+    return events?.map(event => ({
+      id: event._id,
+      title: event.title,
+      start: event.startDate,
+      end: event.endDate,
+      status: event.status,
+      backgroundColor: getEventColor(event.status),
+      description: event.description
+    })) || [];
+  }, [events, getEventColor]);
+
+  // Filter events for the current month
+  const getMonthlyEvents = useCallback(() => {
+    if (!events) return [];
+
+    // Create date objects for the first and last day of the selected month
+    const monthStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+
+    return events.filter((event) => {
+      const eventStart = new Date(event.startDate);
+      const eventEnd = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+
+      // Normalize the time parts to avoid time-of-day comparison issues
+      eventStart.setHours(0, 0, 0, 0);
+      eventEnd.setHours(23, 59, 59, 999);
+
+      return (
+        (eventStart >= monthStart && eventStart <= monthEnd) || // Starts in this month
+        (eventEnd >= monthStart && eventEnd <= monthEnd) || // Ends in this month
+        (eventStart <= monthStart && eventEnd >= monthEnd) // Spans across this month
+      );
+    });
+  }, [events, selectedDate]);
+
+  const handleDatesSet = useCallback((arg) => {
+    // Get the displayed date from the calendar
+    const displayedDate = new Date(arg.view.currentStart);
+    
+    // Create a new date object to avoid reference issues
+    const newDate = new Date(
+      displayedDate.getFullYear(),
+      displayedDate.getMonth(),
+      1
+    );
+
+    // Update the selected date state
+    setSelectedDate(newDate);
+  }, []);
+
+  // Handle calendar reference
+  const handleCalendarRef = useCallback((ref) => {
+    if (ref !== null) {
+      setCalendarApi(ref.getApi());
+    }
+  }, []);
+
+  const cards = [
+    {
+      name: 'Total Events',
+      value: events?.length || 0,
+      icon: UsersIcon,
+      change: '+4.75%',
+      changeType: 'positive',
+    },
+    {
+      name: 'Upcoming Events',
+      value: events?.filter((e) => e.status?.toLowerCase() === 'upcoming')?.length || 0,
+      icon: BuildingOfficeIcon,
+      change: '0%',
+      changeType: 'neutral',
+    },
+    {
+      name: 'Ongoing Events',
+      value: events?.filter((e) => e.status?.toLowerCase() === 'ongoing')?.length || 0,
+      icon: BriefcaseIcon,
+      change: '+2.5%',
+      changeType: 'positive',
+    },
+    {
+      name: 'Completed Events',
+      value: events?.filter((e) => e.status?.toLowerCase() === 'completed')?.length || 0,
+      icon: ClockIcon,
+      change: '-3%',
+      changeType: 'negative',
+    },
+  ];
+
+  if (eventsLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="spinner" />
@@ -35,88 +140,16 @@ const Dashboard = () => {
     );
   }
 
-  // Sample event data (replace with real data from your store)
-  const events = [
-    {
-      title: 'Team Meeting',
-      start: '2025-03-10T10:00:00',
-      end: '2025-03-10T11:00:00',
-      status: 'Upcoming',
-      backgroundColor: '#36A2EB',
-    },
-    {
-      title: 'Project Deadline',
-      start: '2025-03-15',
-      end: '2025-03-15',
-      status: 'Upcoming',
-      backgroundColor: '#36A2EB',
-    },
-    {
-      title: 'Conference Call',
-      start: '2025-03-07T14:00:00',
-      end: '2025-03-07T15:00:00',
-      status: 'Ongoing',
-      backgroundColor: '#FFCE56',
-    },
-    {
-      title: 'Training Session',
-      start: '2025-03-05',
-      end: '2025-03-05',
-      status: 'Completed',
-      backgroundColor: '#4BC0C0',
-    },
-  ];
-
-  const cards = [
-    {
-      name: 'Total Events',
-      value: events.length,
-      icon: UsersIcon,
-      change: '+4.75%',
-      changeType: 'positive',
-    },
-    {
-      name: 'Upcoming Events',
-      value: events.filter((e) => e.status === 'Upcoming').length,
-      icon: BuildingOfficeIcon,
-      change: '0%',
-      changeType: 'neutral',
-    },
-    {
-      name: 'Ongoing Events',
-      value: events.filter((e) => e.status === 'Ongoing').length,
-      icon: BriefcaseIcon,
-      change: '+2.5%',
-      changeType: 'positive',
-    },
-    {
-      name: 'Completed Events',
-      value: events.filter((e) => e.status === 'Completed').length,
-      icon: ClockIcon,
-      change: '-3%',
-      changeType: 'negative',
-    },
-  ];
-
-  // Filter events for the current month
-  const getMonthlyEvents = () => {
-    const monthStart = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth(),
-      1
+  if (eventsError) {
+    return (
+      <div className="flex h-full items-center justify-center text-red-600">
+        <p>Error loading events: {eventsError}</p>
+      </div>
     );
-    const monthEnd = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth() + 1,
-      0
-    );
-    return events.filter((event) => {
-      const eventDate = new Date(event.start);
-      return eventDate >= monthStart && eventDate <= monthEnd;
-    });
-  };
+  }
 
   const monthlyEvents = getMonthlyEvents();
+  const currentCalendarEvents = calendarEvents();
 
   return (
     <div className="space-y-6">
@@ -164,17 +197,20 @@ const Dashboard = () => {
           </h3>
           <div className="mt-4 h-[400px]">
             <FullCalendar
+              ref={handleCalendarRef}
               plugins={[dayGridPlugin]}
               initialView="dayGridMonth"
-              events={events}
+              events={currentCalendarEvents}
               eventContent={(eventInfo) => (
-                <div>
+                <div className="cursor-pointer">
                   <b>{eventInfo.event.title}</b>
-                  <p>{eventInfo.event.extendedProps.status}</p>
+                  <p className="text-xs">{eventInfo.event.extendedProps.status}</p>
                 </div>
               )}
-              datesSet={(dateInfo) => setCurrentMonth(dateInfo.start)}
+              datesSet={handleDatesSet}
               height="100%"
+              initialDate={selectedDate}
+              firstDay={1}
             />
           </div>
         </div>
@@ -183,27 +219,34 @@ const Dashboard = () => {
         <div className="rounded-lg bg-white p-6 shadow">
           <h3 className="text-lg font-medium leading-6 text-gray-900">
             Monthly Events (
-            {currentMonth.toLocaleString('default', { month: 'long' })}{' '}
-            {currentMonth.getFullYear()})
+            {selectedDate.toLocaleString('default', { month: 'long' })}{' '}
+            {selectedDate.getFullYear()})
           </h3>
           <div className="mt-4 max-h-[400px] overflow-y-auto">
             {monthlyEvents.length > 0 ? (
               <ul className="space-y-2">
-                {monthlyEvents.map((event, index) => (
+                {monthlyEvents.map((event) => (
                   <li
-                    key={index}
+                    key={event._id}
                     className="flex items-center justify-between rounded-md border p-2"
                   >
                     <div>
                       <p className="font-semibold">{event.title}</p>
                       <p className="text-sm text-gray-500">
-                        {new Date(event.start).toLocaleDateString()} -{' '}
-                        {event.status}
+                        {new Date(event.startDate).toLocaleDateString()} 
+                        {event.endDate && event.endDate !== event.startDate && 
+                          ` - ${new Date(event.endDate).toLocaleDateString()}`
+                        } • {event.status}
                       </p>
+                      {event.description && (
+                        <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                          {event.description}
+                        </p>
+                      )}
                     </div>
                     <span
                       className="inline-block h-3 w-3 rounded-full"
-                      style={{ backgroundColor: event.backgroundColor }}
+                      style={{ backgroundColor: getEventColor(event.status) }}
                     />
                   </li>
                 ))}
