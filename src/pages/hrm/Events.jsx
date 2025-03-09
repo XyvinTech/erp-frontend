@@ -199,7 +199,7 @@ const Events = () => {
             setSelectedEvent(null);
             setShowModal(true);
           }}
-          className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500"
+          className="inline-flex items-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800"
         >
           <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
           Add Event
