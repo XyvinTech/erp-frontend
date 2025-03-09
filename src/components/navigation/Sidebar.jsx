@@ -59,6 +59,7 @@ const hrmNavigation = {
     { name: 'Attendance', href: '/hrm/attendance', icon: ClockIcon },
     { name: 'Leave', href: '/hrm/leave', icon: CalendarIcon },
     { name: 'Payroll', href: '/hrm/payroll', icon: BanknotesIcon },
+    { name: 'Events', href: '/hrm/events', icon: CalendarIcon },
   ],
 };
 

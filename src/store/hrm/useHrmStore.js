@@ -40,6 +40,11 @@ const useHrmStore = create((set, get) => ({
   payrollLoading: false,
   payrollError: null,
 
+  // Events State
+  events: [],
+  eventsLoading: false,
+  eventsError: null,
+
   // Employee Actions
   fetchEmployees: async (params) => {
     set({ employeesLoading: true, employeesError: null });
@@ -626,6 +631,95 @@ const useHrmStore = create((set, get) => ({
       set({
         payrollError: error.response?.data?.message || 'Failed to download payroll',
         payrollLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  // Events Actions
+  fetchEvents: async () => {
+    set({ eventsLoading: true, eventsError: null });
+    try {
+      console.log('Fetching events from store...');
+      const events = await hrmService.getEvents();
+      console.log('Events fetched in store:', events);
+      
+      if (!Array.isArray(events)) {
+        console.error('Invalid events data:', events);
+        throw new Error('Invalid events data received');
+      }
+      
+      set({ 
+        events,
+        eventsLoading: false,
+        eventsError: null
+      });
+      return events;
+    } catch (error) {
+      console.error('Error in store fetchEvents:', error);
+      set({
+        events: [],
+        eventsError: error.message || 'Failed to fetch events',
+        eventsLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  createEvent: async (data) => {
+    set({ eventsLoading: true, eventsError: null });
+    try {
+      const event = await hrmService.createEvent(data);
+      set(state => ({
+        events: [...state.events, event],
+        eventsLoading: false
+      }));
+      return event;
+    } catch (error) {
+      set({
+        eventsError: error.response?.data?.message || 'Failed to create event',
+        eventsLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  updateEvent: async (id, data) => {
+    set({ eventsLoading: true, eventsError: null });
+    try {
+      console.log('Store: Updating event:', { id, data });
+      const event = await hrmService.updateEvent(id, data);
+      console.log('Store: Update successful:', event);
+      
+      set(state => ({
+        events: state.events.map(e => e._id === id ? event : e),
+        eventsLoading: false,
+        eventsError: null
+      }));
+      return event;
+    } catch (error) {
+      console.error('Store: Error updating event:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update event';
+      set({
+        eventsError: errorMessage,
+        eventsLoading: false
+      });
+      throw new Error(errorMessage);
+    }
+  },
+
+  deleteEvent: async (id) => {
+    set({ eventsLoading: true, eventsError: null });
+    try {
+      await hrmService.deleteEvent(id);
+      set(state => ({
+        events: state.events.filter(e => e._id !== id),
+        eventsLoading: false
+      }));
+    } catch (error) {
+      set({
+        eventsError: error.response?.data?.message || 'Failed to delete event',
+        eventsLoading: false,
       });
       throw error;
     }

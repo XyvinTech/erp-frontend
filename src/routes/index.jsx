@@ -43,6 +43,7 @@ import Expenses from '@/pages/frm/Expenses';
 import PersonalLoans from '@/pages/frm/PersonalLoans';
 import OfficeLoans from '@/pages/frm/OfficeLoans';
 import Profits from '@/pages/frm/Profits';
+import Events from '@/pages/hrm/Events';
 
 const router = createBrowserRouter([
   {
@@ -121,6 +122,10 @@ const router = createBrowserRouter([
               {
                 path: 'payroll',
                 element: <Payroll />
+              },
+              {
+                path: 'events',
+                element: <Events />
               }
             ]
           },
