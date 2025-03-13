@@ -205,7 +205,7 @@ const ExpenseList = () => {
       {
         Header: 'Actions',
         Cell: ({ row }) => (
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-start space-x-2">
             <button onClick={() => handleEdit(row.original)} className="text-black hover:text-gray-800">
               <PencilIcon className="h-5 w-5" aria-hidden="true" />
             </button>

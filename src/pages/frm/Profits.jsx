@@ -174,7 +174,7 @@ const Profits = () => {
 
   const columns = useMemo(
     () => [
-      { Header: 'Profit No.', accessor: 'profitNumber' },
+      { Header: 'Revenue No.', accessor: 'profitNumber' },
       { Header: 'Description', accessor: 'description' },
       {
         Header: 'Amount',
@@ -205,7 +205,7 @@ const Profits = () => {
       {
         Header: 'Actions',
         Cell: ({ row }) => (
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-start space-x-2">
             <button onClick={() => handleEdit(row.original)} className="text-black hover:text-gray-800">
               <PencilIcon className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -306,7 +306,7 @@ const Profits = () => {
     <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
       <div className="sm:flex sm:items-center mb-8">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Profits</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Revenue</h1>
           <p className="mt-2 text-sm text-gray-700">
             A list of all profits including their description, amount, date, and status.
           </p>

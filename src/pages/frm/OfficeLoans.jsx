@@ -133,7 +133,7 @@ const OfficeLoanList = () => {
       {
         Header: 'Actions',
         Cell: ({ row }) => (
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-start gap-2">
             <button
               onClick={() => handleEdit(row.original)}
               className="inline-flex items-center text-primary-600 hover:text-primary-900"

@@ -6,7 +6,7 @@ const ProfitCard = ({ profit, onEdit, onDelete, formatCurrency }) => {
     <div className="bg-white shadow rounded-lg p-4 mb-4">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <p className="text-sm font-medium text-gray-500">Profit No.</p>
+          <p className="text-sm font-medium text-gray-500">Revenue No.</p>
           <p className="text-sm font-semibold text-gray-900">{profit.profitNumber}</p>
         </div>
         <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${

@@ -116,14 +116,14 @@ const ProfitForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                     <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                      {initialData ? 'Edit Profit' : 'Add New Profit'}
+                      {initialData ? 'Edit Revenue' : 'Add New Revenue'}
                     </Dialog.Title>
 
                     <form onSubmit={handleSubmit(handleFormSubmit)} className="mt-6 space-y-6">
                       {!initialData ? (
                         <div>
                           <label htmlFor="profitNumber" className="block text-sm font-medium text-gray-700">
-                            Profit Number
+                            Revenue Number
                           </label>
                           <input
                             type="text"
@@ -253,7 +253,7 @@ const ProfitForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                           disabled={isSubmitting}
                           className="inline-flex w-full justify-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {isSubmitting ? 'Submitting...' : initialData ? 'Update Profit' : 'Add Profit'}
+                          {isSubmitting ? 'Submitting...' : initialData ? 'Update   Revenue' : 'Add Revenue'}
                         </button>
                         <button
                           type="button"

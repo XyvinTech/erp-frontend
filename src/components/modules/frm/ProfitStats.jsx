@@ -12,23 +12,23 @@ const ProfitStats = ({ stats }) => {
 
   const cards = [
     {
-      title: 'Total Profits',
+      title: 'Total Revenue',
       value: formatCurrency(stats.totalAmount),
-      description: `${stats.totalCount || 0} total profits`,
+      description: `${stats.totalCount || 0} total revenue`,
       icon: CurrencyDollarIcon,
       color: 'bg-blue-500'
     },
     {
-      title: 'Realized Profits',
+      title: 'Realized Revenue',
       value: formatCurrency(stats.realizedAmount),
-      description: `${stats.realizedCount || 0} realized profits`,
+      description: `${stats.realizedCount || 0} realized revenue`,
       icon: CheckCircleIcon,
       color: 'bg-green-500'
     },
     {
-      title: 'Pending Profits',
+      title: 'Pending Revenue',
       value: formatCurrency(stats.pendingAmount),
-      description: `${stats.pendingCount || 0} pending profits`,
+      description: `${stats.pendingCount || 0} pending revenue`,
       icon: ClockIcon,
       color: 'bg-yellow-500'
     }

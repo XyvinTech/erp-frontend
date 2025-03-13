@@ -154,7 +154,7 @@ const PersonalLoanList = () => {
       {
         Header: 'Actions',
         Cell: ({ row }) => (
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-start space-x-3">
             <button
               onClick={() => handleEdit(row.original)}
               className="text-gray-700 hover:text-gray-900"
