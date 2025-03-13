@@ -27,12 +27,12 @@ const frmNavigation = {
     { name: 'Expenses', href: '/frm/expenses', icon: CurrencyDollarIcon },
     { name: 'Personal Loans', href: '/frm/personal-loans', icon: CreditCardIcon },
     { name: 'Office Loans', href: '/frm/office-loans', icon: BanknotesIcon },
-    { name: "Revenue", href: '/frm/profits', icon: FolderIcon },
+    { name: 'Revenue', href: '/frm/profits', icon: FolderIcon },
   ],
 };
 
 const baseNavigation = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon },
+  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
 ];
 
 const employeeNavigation = {
@@ -41,8 +41,8 @@ const employeeNavigation = {
   children: [
     { name: 'Dashboard', href: '/employee/dashboard', icon: ChartBarIcon },
     { name: 'Profile', href: '/employee/profile', icon: UserCircleIcon },
-    { name: 'Leave Application', href: '/employee/LeaveApplication', icon: CalendarIcon },
-    { name: 'My Attendance', href: '/employee/myAttendance', icon: ClockIcon },
+    { name: 'Leave Application', href: '/employee/leaveapplication', icon: CalendarIcon },
+    { name: 'My Attendance', href: '/employee/myattendance', icon: ClockIcon },
     { name: 'Pay Slip', href: '/employee/payslip', icon: DocumentTextIcon },
     { name: 'My Projects', href: '/employee/projects', icon: FolderIcon },
   ],
@@ -76,7 +76,7 @@ const projectsNavigation = {
   icon: FolderIcon,
   children: [
     { name: 'All Projects', href: '/projects/list', icon: FolderIcon },
-    { name: 'Project Details', href: '/projects/details/:id', icon: DocumentTextIcon },
+    { name: 'Project Details', href: '/projects/details', icon: DocumentTextIcon },
   ],
 };
 
@@ -87,18 +87,53 @@ function classNames(...classes) {
 const Sidebar = ({ open, setOpen }) => {
   const location = useLocation();
   const currentUser = authService.getCurrentUser();
-  // Change from Set to single string to track only one open menu
   const [openMenu, setOpenMenu] = useState(null);
   
-  const navigation = [...baseNavigation];
-  navigation.push(employeeNavigation);
+  console.log('Sidebar - Current user role:', currentUser?.role);
   
-  if (currentUser?.role === 'admin' || currentUser?.role === 'manager') {
+  // Define role-based navigation permissions
+  const navigationPermissions = {
+    'Employee': ['base', 'employee'],
+    'ERP System Administrator': ['base', 'employee', 'hrm', 'clients', 'projects', 'frm'],
+    'IT Manager': ['base', 'employee', 'projects'],
+    'Project Manager': ['base', 'employee', 'projects'],
+    'HR Manager': ['base', 'employee', 'hrm']
+  };
+
+  // Get allowed navigation sections for current user
+  const allowedSections = navigationPermissions[currentUser?.role] || ['base', 'employee'];
+  
+  console.log('Sidebar - Allowed sections:', allowedSections);
+  
+  // Initialize navigation with base items if allowed
+  const navigation = allowedSections.includes('base') ? [...baseNavigation] : [];
+  
+  // Add employee navigation if allowed
+  if (allowedSections.includes('employee')) {
+    navigation.push(employeeNavigation);
+  }
+  
+  // Add HRM navigation if allowed
+  if (allowedSections.includes('hrm')) {
     navigation.push(hrmNavigation);
+  }
+  
+  // Add clients navigation if allowed
+  if (allowedSections.includes('clients')) {
     navigation.push(clientsNavigation);
+  }
+  
+  // Add projects navigation if allowed
+  if (allowedSections.includes('projects')) {
     navigation.push(projectsNavigation);
+  }
+  
+  // Add frm navigation if allowed
+  if (allowedSections.includes('frm')) {
     navigation.push(frmNavigation);
   }
+
+  console.log('Sidebar - Final navigation:', navigation);
 
   const toggleMenu = (menuName) => {
     // If clicking the same menu, close it. Otherwise, open the new menu and close others

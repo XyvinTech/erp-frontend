@@ -25,7 +25,7 @@ const Login = () => {
       
       // The token is nested in response.data.data.token
       const token = response?.data?.token;
-      const user = response?.data?.user;
+      const user = response?.data?.employee;
       
       if (token && user) {
         // Store the token and user data

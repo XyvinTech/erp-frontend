@@ -54,7 +54,7 @@ const router = createBrowserRouter([
         element: <DashboardLayout />,
         children: [
           {
-            path: '/',
+            path: '/dashboard',
             element: <Dashboard />
           },
           // Employee Routes
@@ -157,6 +157,10 @@ const router = createBrowserRouter([
               },
               {
                 path: 'details/:projectId',
+                element: <ProjectDetails />
+              },
+              {
+                path: 'projecta/details',
                 element: <ProjectDetails />
               }
             ]
