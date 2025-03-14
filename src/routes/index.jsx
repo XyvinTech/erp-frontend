@@ -54,7 +54,7 @@ const router = createBrowserRouter([
         element: <DashboardLayout />,
         children: [
           {
-            path: '/dashboard',
+            path: '/',
             element: <Dashboard />
           },
           // Employee Routes

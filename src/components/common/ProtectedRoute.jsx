@@ -32,7 +32,7 @@ const ProtectedRoute = () => {
       '/employee/projects'
     ],
     'ERP System Administrator': [
-      '/dashboard',
+      '/',
       '/employee',
       '/profile',
       '/hrm',

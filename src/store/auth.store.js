@@ -23,6 +23,7 @@ const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await authService.login(email, password);
+          console.log(response, "response");
           set({
             user: response.data.user,
             token: response.token,
