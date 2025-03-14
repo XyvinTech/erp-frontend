@@ -1,447 +1,607 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { CameraIcon, PencilIcon } from '@heroicons/react/24/outline';
-import authService from '@/services/auth.service';
-import { toast } from 'react-hot-toast';
-import { getMyAttendance } from '@/services/hrm/hrmService';
+import { useState, useRef, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { CameraIcon, PencilIcon } from "@heroicons/react/24/outline";
+import { toast } from "react-hot-toast";
+import {
+  useCurrentUser,
+  useUpdateProfile,
+  useUpdateProfilePicture,
+} from "@/api/hooks/useAuth";
+import useAuthStore from "@/store/authStore";
+import useUiStore from "@/store/uiStore";
+import { useEmployeeAttendance } from "@/api/hooks/useEmployee";
 
 const Profile = () => {
-  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser());
-  const [profilePicUrl, setProfilePicUrl] = useState('/assets/images/default-avatar.png');
+  // TanStack Query hooks
+  const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser();
+  const updateProfileMutation = useUpdateProfile();
+  const updateProfilePictureMutation = useUpdateProfilePicture();
+
+  // Zustand store hooks
+  const { user, updateUser } = useAuthStore();
+  const { addToast } = useUiStore();
+
+  const [profilePicUrl, setProfilePicUrl] = useState(
+    "/assets/images/default-avatar.png"
+  );
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [attendanceStats, setAttendanceStats] = useState({
     present: 0,
     absent: 0,
     total: 0,
     percentage: 0,
-    leaveCount: 0
+    leaveCount: 0,
   });
+
   const [formData, setFormData] = useState({
-    firstName: currentUser?.firstName || '',
-    lastName: currentUser?.lastName || '',
-    email: currentUser?.email || '',
-    phone: currentUser?.phone || '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
     emergencyContact: {
-      name: currentUser?.emergencyContact?.name || '',
-      relationship: currentUser?.emergencyContact?.relationship || '',
-      phone: currentUser?.emergencyContact?.phone || '',
-      email: currentUser?.emergencyContact?.email || '',
+      name: "",
+      relationship: "",
+      phone: "",
+    },
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "",
     },
   });
 
+  // Get employee attendance
+  const { data: attendanceData } = useEmployeeAttendance(user?.id, {
+    startDate: new Date(new Date().getFullYear(), 0, 1).toISOString(), // Start of current year
+    endDate: new Date().toISOString(), // Today
+  });
+
+  // Update form data when user data changes
   useEffect(() => {
-    fetchAttendanceStats();
-  }, []);
-
-  useEffect(() => {
-    setFormData({
-      firstName: currentUser?.firstName || '',
-      lastName: currentUser?.lastName || '',
-      email: currentUser?.email || '',
-      phone: currentUser?.phone || '',
-      emergencyContact: {
-        name: currentUser?.emergencyContact?.name || '',
-        relationship: currentUser?.emergencyContact?.relationship || '',
-        phone: currentUser?.emergencyContact?.phone || '',
-        email: currentUser?.emergencyContact?.email || '',
-      },
-    });
-  }, [currentUser]);
-
-  useEffect(() => {
-    const picturePath = currentUser?.profilePicture;
-    if (picturePath) {
-      // If it's already a full URL, use it as is
-      if (picturePath.startsWith('http')) {
-        setProfilePicUrl(picturePath);
-      } else {
-        // Remove any leading slashes and construct the full URL
-        const cleanPath = picturePath.replace(/^\/+/, '');
-        setProfilePicUrl(`${import.meta.env.VITE_API_URL}/${cleanPath}`);
-      }
-    } else {
-      setProfilePicUrl('/assets/images/default-avatar.png');
-    }
-  }, [currentUser]);
-
-  const fetchAttendanceStats = async () => {
-    try {
-      // Get the first day of the current month
-      const startDate = new Date();
-      startDate.setDate(1);
-      startDate.setHours(0, 0, 0, 0);
-
-      // Get the current date as end date
-      const endDate = new Date();
-      
-      const response = await getMyAttendance({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
+    if (user) {
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        emergencyContact: {
+          name: user.emergencyContact?.name || "",
+          relationship: user.emergencyContact?.relationship || "",
+          phone: user.emergencyContact?.phone || "",
+        },
+        address: {
+          street: user.address?.street || "",
+          city: user.address?.city || "",
+          state: user.address?.state || "",
+          zipCode: user.address?.zipCode || "",
+          country: user.address?.country || "",
+        },
       });
 
-      if (response?.data?.attendance) {
-        const attendance = response.data.attendance;
-        
-        // Calculate different attendance types
-        const presentDays = attendance.filter(a => a.status === 'Present').length;
-        const leaveDays = attendance.filter(a => 
-          a.status === 'On-Leave' || 
-          (a.isLeave === true && ['Annual', 'Sick', 'Personal', 'Maternity', 'Paternity', 'Unpaid'].includes(a.leaveType))
-        ).length;
-        const absentDays = attendance.filter(a => a.status === 'Absent').length;
-        const halfDays = attendance.filter(a => a.status === 'Half-Day').length;
-        const lateDays = attendance.filter(a => a.status === 'Late').length;
-        const earlyLeaveDays = attendance.filter(a => a.status === 'Early-Leave').length;
-
-        // Calculate working days (excluding weekends and holidays)
-        const workingDays = attendance.filter(a => 
-          !a.isHoliday && !a.isWeekend
-        ).length;
-
-        // Calculate effective present days (including half days as 0.5)
-        const effectivePresentDays = presentDays + (halfDays * 0.5) + lateDays + earlyLeaveDays;
-        
-        // Calculate attendance percentage based on working days (excluding leave days)
-        const attendancePercentage = (workingDays - leaveDays) > 0 
-          ? Math.round((effectivePresentDays / (workingDays - leaveDays)) * 100) 
-          : 0;
-
-        setAttendanceStats({
-          present: effectivePresentDays,
-          absent: absentDays,
-          total: workingDays,
-          percentage: attendancePercentage,
-          leaveCount: leaveDays
-        });
-
-        console.log('Attendance Statistics:', {
-          totalRecords: attendance.length,
-          workingDays,
-          presentDays,
-          effectivePresentDays,
-          leaveDays,
-          absentDays,
-          halfDays,
-          lateDays,
-          earlyLeaveDays,
-          percentage: attendancePercentage,
-          leaveDetails: attendance.filter(a => a.status === 'On-Leave' || a.isLeave === true)
-        });
-
-      } else {
-        // If no attendance data available, keep default values
-        setAttendanceStats({
-          present: 0,
-          absent: 0,
-          total: 0,
-          percentage: 0,
-          leaveCount: 0
-        });
+      if (user.profilePicture) {
+        setProfilePicUrl(user.profilePicture);
       }
-
-    } catch (error) {
-      console.error('Error fetching attendance stats:', error);
-      toast.error('Failed to fetch attendance statistics');
     }
-  };
+  }, [user]);
+
+  // Update attendance stats when attendance data changes
+  useEffect(() => {
+    if (attendanceData) {
+      const present = attendanceData.filter(
+        (a) => a.status === "present"
+      ).length;
+      const total = attendanceData.length;
+      const absent = total - present;
+      const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+      const leaveCount = attendanceData.filter(
+        (a) => a.status === "leave"
+      ).length;
+
+      setAttendanceStats({
+        present,
+        absent,
+        total,
+        percentage,
+        leaveCount,
+      });
+    }
+  }, [attendanceData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes('emergency')) {
-      const field = name.split('.')[1];
-      setFormData(prev => ({
+
+    if (name.includes(".")) {
+      const [section, field] = name.split(".");
+      setFormData((prev) => ({
         ...prev,
-        emergencyContact: {
-          ...prev.emergencyContact,
-          [field]: value
-        }
+        [section]: {
+          ...prev[section],
+          [field]: value,
+        },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
 
   const handleImageClick = () => {
-    fileInputRef.current?.click();
+    fileInputRef.current.click();
   };
 
   const handleImageChange = async (e) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+    // Check file type
+    if (!file.type.startsWith("image/")) {
+      addToast({
+        type: "error",
+        message: "Please select an image file",
+      });
       return;
     }
 
-    // Validate file size (max 5MB)
+    // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size should be less than 5MB');
+      addToast({
+        type: "error",
+        message: "Image size should be less than 5MB",
+      });
       return;
     }
 
     try {
-      setIsUploading(true);
+      // Create form data
       const formData = new FormData();
-      formData.append('profilePicture', file);
+      formData.append("profilePicture", file);
 
-      const response = await authService.updateProfilePicture(formData);
-      
-      // Log the entire response for debugging
-      console.log('Full response:', response);
-      console.log('Response data:', response.data);
-      console.log('Employee data:', response.data?.data?.employee);
+      // Update profile picture
+      await updateProfilePictureMutation.mutateAsync(formData);
 
-      if (!response.data?.data?.employee) {
-        throw new Error('No employee data received');
-      }
+      // Show success message
+      addToast({
+        type: "success",
+        message: "Profile picture updated successfully",
+      });
 
-      const updatedUser = response.data.data.employee;
-      authService.updateUser(updatedUser);
-      setCurrentUser(updatedUser);
-
-      if (!updatedUser.profilePicture) {
-        throw new Error('No profile picture URL received');
-      }
-
-      const cleanPath = updatedUser.profilePicture.replace(/^\/+/, '');
-      const fullUrl = `${import.meta.env.VITE_API_URL}/${cleanPath}`;
-      
-      console.log('Setting profile URL:', fullUrl);
-      setProfilePicUrl(fullUrl);
-      toast.success('Profile picture updated successfully');
-
+      // Update local state
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfilePicUrl(e.target.result);
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
-      console.error('Error updating profile picture:', error);
-      toast.error(error.message || 'Failed to update profile picture');
-    } finally {
-      setIsUploading(false);
+      addToast({
+        type: "error",
+        message: error.message || "Failed to update profile picture",
+      });
     }
   };
 
   const handleSubmit = async () => {
     try {
-      const response = await authService.updateProfile(formData);
-      authService.updateUser(response.data.user);
-      toast.success('Profile updated successfully');
+      // Update profile
+      await updateProfileMutation.mutateAsync(formData);
+
+      // Show success message
+      addToast({
+        type: "success",
+        message: "Profile updated successfully",
+      });
+
+      // Exit edit mode
       setIsEditing(false);
     } catch (error) {
-      toast.error(error.message || 'Failed to update profile');
+      addToast({
+        type: "error",
+        message: error.message || "Failed to update profile",
+      });
     }
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8 animate-fadeIn">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">My Profile</h1>
-        <Button
-          onClick={() => isEditing ? handleSubmit() : setIsEditing(true)}
-          variant="outline"
-          className="flex items-center gap-2 transition-all hover:scale-105"
-        >
-          <PencilIcon className="h-4 w-4" />
-          {isEditing ? 'Save Changes' : 'Edit Profile'}
-        </Button>
+  if (isLoadingUser) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
+    );
+  }
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="col-span-1 p-6 hover:shadow-lg transition-all duration-300">
-          <div className="flex flex-col items-center">
-            <div className="relative group">
-              <div className="w-32 h-32 rounded-full bg-gray-200 mb-4 overflow-hidden ring-4 ring-primary-50">
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Profile Card */}
+        <div className="md:col-span-1">
+          <Card className="p-6">
+            <div className="flex flex-col items-center">
+              <div className="relative">
                 <img
                   src={profilePicUrl}
                   alt="Profile"
-                  className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '/assets/images/default-avatar.png';
-                  }}
+                  className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                />
+                <button
+                  onClick={handleImageClick}
+                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+                >
+                  <CameraIcon className="h-5 w-5" />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  className="hidden"
+                  accept="image/*"
                 />
               </div>
-              <button 
-                onClick={handleImageClick}
-                disabled={isUploading}
-                className="absolute bottom-4 right-0 p-2 bg-primary-600 rounded-full text-black opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+              <h2 className="mt-4 text-xl font-bold">
+                {user?.firstName} {user?.lastName}
+              </h2>
+              <p className="text-gray-500">
+                {user?.position?.name || "Employee"}
+              </p>
+              <p className="text-gray-500">
+                {user?.department?.name || "Department"}
+              </p>
+
+              <div className="mt-6 w-full">
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Profile Completion</span>
+                  <span>75%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full"
+                    style={{ width: "75%" }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Attendance Stats Card */}
+          <Card className="p-6 mt-6">
+            <h3 className="text-lg font-semibold mb-4">Attendance Overview</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Present</span>
+                  <span>{attendanceStats.present} days</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
+                    style={{ width: `${attendanceStats.percentage}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Absent</span>
+                  <span>{attendanceStats.absent} days</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-red-500 h-2 rounded-full"
+                    style={{
+                      width: `${
+                        attendanceStats.total > 0
+                          ? (attendanceStats.absent / attendanceStats.total) *
+                            100
+                          : 0
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Leave</span>
+                  <span>{attendanceStats.leaveCount} days</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-yellow-500 h-2 rounded-full"
+                    style={{
+                      width: `${
+                        attendanceStats.total > 0
+                          ? (attendanceStats.leaveCount /
+                              attendanceStats.total) *
+                            100
+                          : 0
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <div className="flex justify-between">
+                  <span className="font-medium">Attendance Rate</span>
+                  <span className="font-medium text-green-600">
+                    {attendanceStats.percentage}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Profile Details */}
+        <div className="md:col-span-2">
+          <Card className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold">Personal Information</h3>
+              <Button
+                onClick={() => setIsEditing(!isEditing)}
+                variant="outline"
+                className="flex items-center gap-2"
               >
-                <CameraIcon className="h-4 w-4" />
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageChange}
-              />
-            </div>
-            <h2 className="text-xl font-semibold">{`${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`}</h2>
-            <p className="text-gray-600">{currentUser?.position?.title || 'No Position'}</p>
-            <div className="mt-4 w-full">
-              <div className="flex items-center justify-center space-x-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary-600">{attendanceStats.percentage}%</p>
-                  <p className="text-sm text-gray-500">Attendance</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary-600">{attendanceStats.leaveCount}</p>
-                  <p className="text-sm text-gray-500">Leave Days</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="col-span-1 lg:col-span-2 p-6 hover:shadow-lg transition-all duration-300">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">First Name</label>
-                {isEditing ? (
-                  <Input
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    className="transition-all focus:scale-[1.01]"
-                  />
-                ) : (
-                  <p className="text-gray-900">{formData.firstName}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Last Name</label>
-                {isEditing ? (
-                  <Input
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    className="transition-all focus:scale-[1.01]"
-                  />
-                ) : (
-                  <p className="text-gray-900">{formData.lastName}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
-                {isEditing ? (
-                  <Input
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="transition-all focus:scale-[1.01]"
-                  />
-                ) : (
-                  <p className="text-gray-900">{formData.email}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
-                {isEditing ? (
-                  <Input
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="transition-all focus:scale-[1.01]"
-                  />
-                ) : (
-                  <p className="text-gray-900">{formData.phone || 'Not set'}</p>
-                )}
-              </div>
+                <PencilIcon className="h-4 w-4" />
+                {isEditing ? "Cancel" : "Edit"}
+              </Button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Department</label>
-                <p className="text-gray-900">{currentUser?.department?.name || 'No Department'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Position</label>
-                <p className="text-gray-900">{currentUser?.position?.title || 'No Position'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Employee ID</label>
-                <p className="text-gray-900">{currentUser?.employeeId || 'Not set'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Join Date</label>
-                <p className="text-gray-900">{currentUser?.joiningDate ? new Date(currentUser.joiningDate).toLocaleDateString() : 'Not set'}</p>
-              </div>
-            </div>
-          </div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      className="w-full"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{formData.firstName}</p>
+                  )}
+                </div>
 
-          <div className="mt-6 pt-6 border-t">
-            <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Contact Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
                   {isEditing ? (
                     <Input
-                      name="emergency.name"
-                      value={formData.emergencyContact.name}
+                      name="lastName"
+                      value={formData.lastName}
                       onChange={handleInputChange}
-                      className="transition-all focus:scale-[1.01]"
+                      className="w-full"
                     />
                   ) : (
-                    <p className="text-gray-900">{formData.emergencyContact.name || 'Not set'}</p>
+                    <p className="text-gray-900">{formData.lastName}</p>
                   )}
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Relationship</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
                   {isEditing ? (
                     <Input
-                      name="emergency.relationship"
-                      value={formData.emergencyContact.relationship}
+                      name="email"
+                      value={formData.email}
                       onChange={handleInputChange}
-                      className="transition-all focus:scale-[1.01]"
+                      className="w-full"
+                      disabled
                     />
                   ) : (
-                    <p className="text-gray-900">{formData.emergencyContact.relationship || 'Not set'}</p>
+                    <p className="text-gray-900">{formData.email}</p>
                   )}
                 </div>
-              </div>
-              <div className="space-y-4">
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Contact Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone
+                  </label>
                   {isEditing ? (
                     <Input
-                      name="emergency.phone"
-                      value={formData.emergencyContact.phone}
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleInputChange}
-                      className="transition-all focus:scale-[1.01]"
+                      className="w-full"
                     />
                   ) : (
-                    <p className="text-gray-900">{formData.emergencyContact.phone || 'Not set'}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Contact Email</label>
-                  {isEditing ? (
-                    <Input
-                      name="emergency.email"
-                      value={formData.emergencyContact.email}
-                      onChange={handleInputChange}
-                      className="transition-all focus:scale-[1.01]"
-                    />
-                  ) : (
-                    <p className="text-gray-900">{formData.emergencyContact.email || 'Not set'}</p>
+                    <p className="text-gray-900">
+                      {formData.phone || "Not provided"}
+                    </p>
                   )}
                 </div>
               </div>
+
+              <div className="border-t border-gray-200 pt-6">
+                <h4 className="text-lg font-medium mb-4">Emergency Contact</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Name
+                    </label>
+                    {isEditing ? (
+                      <Input
+                        name="emergencyContact.name"
+                        value={formData.emergencyContact.name}
+                        onChange={handleInputChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-gray-900">
+                        {formData.emergencyContact.name || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Relationship
+                    </label>
+                    {isEditing ? (
+                      <Input
+                        name="emergencyContact.relationship"
+                        value={formData.emergencyContact.relationship}
+                        onChange={handleInputChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-gray-900">
+                        {formData.emergencyContact.relationship ||
+                          "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone
+                    </label>
+                    {isEditing ? (
+                      <Input
+                        name="emergencyContact.phone"
+                        value={formData.emergencyContact.phone}
+                        onChange={handleInputChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-gray-900">
+                        {formData.emergencyContact.phone || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-6">
+                <h4 className="text-lg font-medium mb-4">Address</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Street
+                    </label>
+                    {isEditing ? (
+                      <Input
+                        name="address.street"
+                        value={formData.address.street}
+                        onChange={handleInputChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-gray-900">
+                        {formData.address.street || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City
+                    </label>
+                    {isEditing ? (
+                      <Input
+                        name="address.city"
+                        value={formData.address.city}
+                        onChange={handleInputChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-gray-900">
+                        {formData.address.city || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      State
+                    </label>
+                    {isEditing ? (
+                      <Input
+                        name="address.state"
+                        value={formData.address.state}
+                        onChange={handleInputChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-gray-900">
+                        {formData.address.state || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Zip Code
+                    </label>
+                    {isEditing ? (
+                      <Input
+                        name="address.zipCode"
+                        value={formData.address.zipCode}
+                        onChange={handleInputChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-gray-900">
+                        {formData.address.zipCode || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Country
+                    </label>
+                    {isEditing ? (
+                      <Input
+                        name="address.country"
+                        value={formData.address.country}
+                        onChange={handleInputChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-gray-900">
+                        {formData.address.country || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {isEditing && (
+                <div className="flex justify-end mt-6">
+                  <Button
+                    onClick={() => setIsEditing(false)}
+                    variant="outline"
+                    className="mr-2"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={updateProfileMutation.isPending}
+                  >
+                    {updateProfileMutation.isPending
+                      ? "Saving..."
+                      : "Save Changes"}
+                  </Button>
+                </div>
+              )}
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );
 };
 
-export default Profile; 
+export default Profile;

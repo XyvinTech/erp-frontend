@@ -1,8 +1,13 @@
-import { useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/auth.store';
-import api from '../services/auth.service';
+import authService from '../services/auth.service';
+import { hasRole, hasAnyRole, getUserRoles, isAdmin, isManager } from '@/utils/roleUtils';
 
+/**
+ * Hook to access authentication state and user information
+ * @returns {Object} Authentication state and user information
+ */
 export const useAuth = () => {
   const navigate = useNavigate();
   const {
@@ -12,26 +17,90 @@ export const useAuth = () => {
     isLoading,
     error,
     login,
-    register,
     logout,
-    updateProfile,
-    updatePassword,
+    register,
+    setUser,
+    setIsAuthenticated,
+    setError,
     clearError
   } = useAuthStore();
 
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user data on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Check if user is authenticated
+        const authenticated = authService.isAuthenticated();
+
+        if (authenticated) {
+          // Get current user from local storage
+          const currentUser = authService.getCurrentUser();
+
+          if (currentUser) {
+            setUser(currentUser);
+            setIsAuthenticated(true);
+          } else {
+            // If no user in local storage, try to fetch from API
+            try {
+              const response = await authService.api.get('/api/auth/me');
+              if (response.data.success) {
+                const userData = response.data.data;
+                authService.updateUser(userData);
+                setUser(userData);
+                setIsAuthenticated(true);
+              }
+            } catch (error) {
+              console.error('Error fetching user data:', error);
+              // If API call fails, logout user
+              logout();
+            }
+          }
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Error in useAuth:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [setUser, setIsAuthenticated, logout]);
+
+  // Refresh user data
+  const refreshUser = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // Check if user is authenticated
+      const authenticated = authService.isAuthenticated();
+
+      if (authenticated) {
+        try {
+          const response = await authService.api.get('/api/auth/me');
+          if (response.data.success) {
+            const userData = response.data.data;
+            authService.updateUser(userData);
+            setUser(userData);
+            setIsAuthenticated(true);
+          }
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Error in refreshUser:', error);
+      setLoading(false);
+    }
+  }, [setUser, setIsAuthenticated]);
+
   // Set up axios interceptor for authentication
   useEffect(() => {
-    const requestInterceptor = api.interceptors.request.use(
-      (config) => {
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-
-    const responseInterceptor = api.interceptors.response.use(
+    const interceptor = authService.api.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
@@ -42,33 +111,43 @@ export const useAuth = () => {
       }
     );
 
-    // Cleanup interceptors on unmount
     return () => {
-      api.interceptors.request.eject(requestInterceptor);
-      api.interceptors.response.eject(responseInterceptor);
+      authService.api.interceptors.response.eject(interceptor);
     };
   }, [token, logout, navigate]);
+
+  // Check if user has a specific role
+  const checkRole = useCallback((roleName) => {
+    return hasRole(user, roleName);
+  }, [user]);
+
+  // Check if user has any of the specified roles
+  const checkAnyRole = useCallback((roleNames) => {
+    return hasAnyRole(user, roleNames);
+  }, [user]);
 
   return {
     // State
     user,
+    loading: loading || isLoading,
     isAuthenticated,
-    isLoading,
     error,
 
-    // Auth methods
+    // Actions
     login,
-    register,
     logout,
-    updateProfile,
-    updatePassword,
+    register,
+    setError,
     clearError,
 
     // Helper methods
-    isAdmin: () => user?.role === 'admin',
-    hasPermission: (permission) => user?.permissions?.includes(permission),
+    isAdmin: isAdmin(user),
+    isManager: isManager(user),
+    checkRole,
+    checkAnyRole,
+    roles: getUserRoles(user),
+    refreshUser
   };
 };
 
-// Also export as default for flexibility
 export default useAuth; 
