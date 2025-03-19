@@ -13,11 +13,8 @@ class ApiService {
   constructor(baseURL) {
     this.baseURL = baseURL;
 
-    // Ensure baseURL starts with /api
-    const apiPath = baseURL.startsWith('/api') ? baseURL : `/api${baseURL}`;
-    
     this.api = axios.create({
-      baseURL: `${API_URL}${apiPath}`,
+      baseURL: `${API_URL}${baseURL}`,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -59,7 +56,7 @@ class ApiService {
           const refreshToken = localStorage.getItem('refreshToken');
           if (refreshToken) {
             try {
-              const response = await axios.post(`${API_URL}/api/auth/refresh-token`, {
+              const response = await axios.post(`${API_URL}/auth/refresh-token`, {
                 refreshToken
               });
               const { token } = response.data;

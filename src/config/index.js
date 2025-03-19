@@ -1,5 +1,5 @@
 const config = {
-  apiUrl: 'http://localhost:5000/api',
+  apiUrl: 'http://localhost:3001/api/v1',
   env: 'development',
   get isProduction() {
     return this.env === 'production';

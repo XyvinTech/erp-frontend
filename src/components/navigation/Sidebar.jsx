@@ -89,7 +89,7 @@ const Sidebar = ({ open, setOpen }) => {
   const currentUser = authService.getCurrentUser();
   const [openMenu, setOpenMenu] = useState(null);
   
-  console.log('Sidebar - Current user role:', currentUser?.role);
+  console.log('Sidebar - Current user role:', currentUser?.roles?.map(role => role.name) || []);
   
   // Define role-based navigation permissions
   const navigationPermissions = {
@@ -101,7 +101,7 @@ const Sidebar = ({ open, setOpen }) => {
   };
 
   // Get allowed navigation sections for current user
-  const allowedSections = navigationPermissions[currentUser?.role] || ['base', 'employee'];
+  const allowedSections = navigationPermissions[currentUser?.roles?.map(role => role.name)[0]] || ['base', 'employee'];
   
   console.log('Sidebar - Allowed sections:', allowedSections);
   

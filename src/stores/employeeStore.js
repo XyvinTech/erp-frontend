@@ -10,7 +10,7 @@ export const useEmployeeStore = create((set) => ({
   fetchEmployees: async () => {
     try {
       set({ isLoading: true });
-      const response = await api.get('/api/hrm/employees');
+      const response = await api.get('/hrm/employees');
       console.log('Fetched employees:', response.data);
       
       // Handle nested data structure
@@ -38,7 +38,7 @@ export const useEmployeeStore = create((set) => ({
   addEmployee: async (employeeData) => {
     try {
       set({ isLoading: true });
-      const response = await api.post('/api/hrm/employees', employeeData);
+      const response = await api.post('/hrm/employees', employeeData);
       const newEmployee = response.data?.data || response.data;
       set((state) => ({
         employees: [...state.employees, newEmployee],
@@ -59,7 +59,7 @@ export const useEmployeeStore = create((set) => ({
   updateEmployee: async (employeeId, employeeData) => {
     try {
       set({ isLoading: true });
-      const response = await api.patch(`/api/hrm/employees/${employeeId}`, employeeData);
+      const response = await api.patch(`/hrm/employees/${employeeId}`, employeeData);
       const updatedEmployee = response.data?.data || response.data;
       set((state) => ({
         employees: state.employees.map((emp) =>
@@ -82,7 +82,7 @@ export const useEmployeeStore = create((set) => ({
   deleteEmployee: async (employeeId) => {
     try {
       set({ isLoading: true });
-      await api.delete(`/api/hrm/employees/${employeeId}`);
+      await api.delete(`/hrm/employees/${employeeId}`);
       set((state) => ({
         employees: state.employees.filter((emp) => emp._id !== employeeId),
         isLoading: false,

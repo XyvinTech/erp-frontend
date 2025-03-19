@@ -43,7 +43,7 @@ const PaySlip = () => {
       const [monthName, year] = month.split(' ');
       const period = new Date(`${monthName} 1, ${year}`);
 
-      const response = await axios.get(`/api/hrm/payroll/my-payroll`, {
+      const response = await axios.get(`/hrm/payroll/my-payroll`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

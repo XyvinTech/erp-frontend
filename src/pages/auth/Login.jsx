@@ -23,9 +23,8 @@ const Login = () => {
       setIsLoading(true);
       const response = await authService.login(data.email, data.password);
       
-      // The token is nested in response.data.data.token
-      const token = response?.data?.token;
-      const user = response?.data?.employee;
+      // The token and user are directly in the response
+      const { token, user } = response;
       
       if (token && user) {
         // Store the token and user data

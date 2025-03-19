@@ -2,8 +2,8 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import authService from '@/services/auth.service';
 
 const ProtectedRoute = () => {
-  const isAuthenticated = authService.isAuthenticated();
-  const currentUser = authService.getCurrentUser();
+  const isAuthenticated = localStorage.getItem('token');
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const location = useLocation();
 
   // If not authenticated, redirect to login
@@ -13,8 +13,8 @@ const ProtectedRoute = () => {
 
   // Check role-based access
   const path = location.pathname.toLowerCase();
-  const role = currentUser?.role;
-  console.log('Current user role:', role);
+  const userRoles = currentUser?.roles?.map(role => role.name) || [];
+  console.log('Current user roles:', userRoles);
   console.log('Current path:', path);
 
   // Define role-based route permissions
@@ -32,7 +32,7 @@ const ProtectedRoute = () => {
       '/employee/projects'
     ],
     'ERP System Administrator': [
-      '/',
+      '/dashboard',
       '/employee',
       '/profile',
       '/hrm',
@@ -90,20 +90,27 @@ const ProtectedRoute = () => {
   };
 
   // Check if user has access to the current path
-  const hasAccess = routePermissions[role]?.some(allowedPath => {
-    const normalizedPath = path.toLowerCase();
-    const normalizedAllowedPath = allowedPath.toLowerCase();
+   // Check if user has access to the current path based on any of their roles
+   const hasAccess = userRoles.some(role => {
+    // Get allowed paths for this role
+    const allowedPaths = routePermissions[role] || [];
     
-    // Handle exact matches and parent paths
-    if (normalizedPath === normalizedAllowedPath) return true;
-    
-    // Handle child paths (e.g., /projects/details/123 should match /projects/details)
-    if (normalizedPath.startsWith(normalizedAllowedPath + '/')) return true;
-    
-    // Handle parent paths (e.g., /projects should match /projects/list)
-    if (normalizedAllowedPath.startsWith(normalizedPath + '/')) return true;
-    
-    return false;
+    // Check if any of the allowed paths match the current path
+    return allowedPaths.some(allowedPath => {
+      const normalizedPath = path.toLowerCase();
+      const normalizedAllowedPath = allowedPath.toLowerCase();
+      
+      // Handle exact matches and parent paths
+      if (normalizedPath === normalizedAllowedPath) return true;
+      
+      // Handle child paths (e.g., /projects/details/123 should match /projects/details)
+      if (normalizedPath.startsWith(normalizedAllowedPath + '/')) return true;
+      
+      // Handle parent paths (e.g., /projects should match /projects/list)
+      if (normalizedAllowedPath.startsWith(normalizedPath + '/')) return true;
+      
+      return false;
+    });
   });
 
   console.log('Has access:', hasAccess, 'for path:', path);
