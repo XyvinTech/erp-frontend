@@ -28,13 +28,12 @@ const Login = () => {
 
   const onSubmit = async (data) => {
     try {
-      const response = await loginMutation.mutateAsync({
-        email: data.email,
-        password: data.password,
-      });
-
-      const { token, user } = response?.data || {};
-
+      setIsLoading(true);
+      const response = await authService.login(data.email, data.password);
+      
+      // The token and user are directly in the response
+      const { token, user } = response;
+      
       if (token && user) {
         // Update Zustand store
         storeLogin(user, token);

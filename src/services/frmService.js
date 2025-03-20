@@ -1,9 +1,9 @@
 import api from './api';
 
-const EXPENSE_URL = '/api/frm/expenses';
-const PERSONAL_LOAN_URL = '/api/frm/personal-loans';
-const OFFICE_LOAN_URL = '/api/frm/office-loans';
-const PROFIT_URL = '/api/frm/profits';
+const EXPENSE_URL = '/frm/expenses';
+const PERSONAL_LOAN_URL = '/frm/personal-loans';
+const OFFICE_LOAN_URL = '/frm/office-loans';
+const PROFIT_URL = '/frm/profits';
 
 // Expense Services
 const createExpense = async (expenseData) => {

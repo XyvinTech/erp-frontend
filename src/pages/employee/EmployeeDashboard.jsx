@@ -18,9 +18,9 @@ import ApiService from '@/services/api.service';
 import authService from '@/services/auth.service';
 import { toast } from 'react-hot-toast';
 
-const attendanceService = new ApiService('/api/hrm');
-const leaveApi = new ApiService('/api/hrm/leaves');
-const payrollService = new ApiService('/api/hrm/payroll');
+const attendanceService = new ApiService('/hrm');
+const leaveApi = new ApiService('/hrm/leaves');
+const payrollService = new ApiService('/hrm/payroll');
 
 const COLORS = ['#22C55E', '#EAB308', '#EF4444']; // Green for Present, Yellow for Late, Red for Absent
 

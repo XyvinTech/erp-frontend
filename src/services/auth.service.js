@@ -44,8 +44,8 @@ class AuthService {
    */
   async login(email, password) {
     try {
-      const response = await this.api.post('/api/auth/login', { email, password });
-      const { token, user } = response?.data?.data || {};
+      const response = await this.api.post('/auth/login', { email, password });
+      const { token, user } = response.data;
       
       if (token && user) {
         localStorage.setItem('token', token);
@@ -110,7 +110,7 @@ class AuthService {
 
       // First try the /me endpoint
       try {
-        const response = await this.api.patch('/api/hrm/employees/me', userData);
+        const response = await this.api.patch('/hrm/employees/me', userData);
         if (response.data.status === 'success') {
           const updatedUser = {
             ...user,
@@ -122,7 +122,7 @@ class AuthService {
       } catch (error) {
         // If /me endpoint fails, try with ID
         if (error.response?.status === 404) {
-          const response = await this.api.patch(`/api/hrm/employees/${user._id}`, userData);
+          const response = await this.api.patch(`/hrm/employees/${user._id}`, userData);
           if (response.data.status === 'success') {
             const updatedUser = {
               ...user,
@@ -145,7 +145,7 @@ class AuthService {
    */
   async getProfile() {
     try {
-      const response = await this.api.get('/api/hrm/employees/me');
+      const response = await this.api.get('/hrm/employees/me');
       if (response.data.status === 'success') {
         this.updateUser(response.data.data.employee);
         return response.data;
@@ -162,7 +162,7 @@ class AuthService {
    */
   async updateProfilePicture(formData) {
     try {
-      const response = await this.api.post('/api/hrm/employees/me/profile-picture', formData, {
+      const response = await this.api.post('/hrm/employees/me/profile-picture', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
