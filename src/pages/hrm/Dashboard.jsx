@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   UserGroupIcon,
   BuildingOfficeIcon,
@@ -8,8 +8,8 @@ import {
   BanknotesIcon,
   CheckCircleIcon,
   XCircleIcon,
-} from '@heroicons/react/24/outline';
-import useHrmStore from '../../store/hrm/useHrmStore';
+} from "@heroicons/react/24/outline";
+import useHrmStore from "../../stores/useHrmStore";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -21,9 +21,9 @@ import {
   Tooltip,
   Legend,
   ArcElement,
-} from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
-import { formatDistanceToNow } from 'date-fns';
+} from "chart.js";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
+import { formatDistanceToNow } from "date-fns";
 
 // Register ChartJS components
 ChartJS.register(
@@ -46,12 +46,24 @@ const SummaryCard = ({ icon: Icon, title, value, change, isIncrease }) => {
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="mt-2 text-3xl font-semibold text-gray-900">{value}</p>
         </div>
-        <div className={`rounded-full p-3 ${isIncrease ? 'bg-green-100' : 'bg-red-100'}`}>
-          <Icon className={`h-6 w-6 ${isIncrease ? 'text-green-600' : 'text-red-600'}`} />
+        <div
+          className={`rounded-full p-3 ${
+            isIncrease ? "bg-green-100" : "bg-red-100"
+          }`}
+        >
+          <Icon
+            className={`h-6 w-6 ${
+              isIncrease ? "text-green-600" : "text-red-600"
+            }`}
+          />
         </div>
       </div>
       <div className="mt-4">
-        <span className={`text-sm font-medium ${isIncrease ? 'text-green-600' : 'text-red-600'}`}>
+        <span
+          className={`text-sm font-medium ${
+            isIncrease ? "text-green-600" : "text-red-600"
+          }`}
+        >
           {change}
         </span>
         <span className="text-sm text-gray-500"> vs last month</span>
@@ -119,72 +131,82 @@ const Dashboard = () => {
       const activities = [];
 
       // Add new employees (joined in the last 30 days)
-      employees?.forEach(emp => {
+      employees?.forEach((emp) => {
         if (emp.joiningDate) {
           const joinDate = new Date(emp.joiningDate);
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          
+
           if (joinDate >= thirtyDaysAgo) {
             activities.push({
-              type: 'employee_joined',
-              content: `${emp.firstName} ${emp.lastName} joined as ${emp.position?.title || 'Employee'}`,
+              type: "employee_joined",
+              content: `${emp.firstName} ${emp.lastName} joined as ${
+                emp.position?.title || "Employee"
+              }`,
               date: joinDate,
               icon: UserGroupIcon,
-              iconBackground: 'bg-blue-500',
+              iconBackground: "bg-blue-500",
             });
           }
         }
       });
 
       // Add recent attendance records
-      attendance?.forEach(record => {
+      attendance?.forEach((record) => {
         if (record.date) {
           const date = new Date(record.date);
           activities.push({
-            type: 'attendance',
+            type: "attendance",
             content: `${record.employee?.firstName} ${record.employee?.lastName} marked as ${record.status}`,
             date: date,
             icon: ClockIcon,
-            iconBackground: record.status === 'Present' ? 'bg-green-500' : 
-                          record.status === 'Late' ? 'bg-yellow-500' : 'bg-red-500',
+            iconBackground:
+              record.status === "Present"
+                ? "bg-green-500"
+                : record.status === "Late"
+                ? "bg-yellow-500"
+                : "bg-red-500",
           });
         }
       });
 
       // Add recent leave requests
-      leaves?.forEach(leave => {
+      leaves?.forEach((leave) => {
         if (leave.createdAt || leave.updatedAt) {
           const date = new Date(leave.updatedAt || leave.createdAt);
           activities.push({
-            type: 'leave',
-            content: `Leave request ${leave.status.toLowerCase()} for ${leave.employee?.firstName} ${leave.employee?.lastName}`,
+            type: "leave",
+            content: `Leave request ${leave.status.toLowerCase()} for ${
+              leave.employee?.firstName
+            } ${leave.employee?.lastName}`,
             date: date,
             icon: CalendarIcon,
-            iconBackground: leave.status === 'Approved' ? 'bg-green-500' : 
-                          leave.status === 'Pending' ? 'bg-yellow-500' : 'bg-red-500',
+            iconBackground:
+              leave.status === "Approved"
+                ? "bg-green-500"
+                : leave.status === "Pending"
+                ? "bg-yellow-500"
+                : "bg-red-500",
           });
         }
       });
 
       // Add recent payroll activities
-      payroll?.forEach(pay => {
+      payroll?.forEach((pay) => {
         if (pay.createdAt || pay.processedDate) {
           const date = new Date(pay.processedDate || pay.createdAt);
           activities.push({
-            type: 'payroll',
+            type: "payroll",
             content: `Payroll processed for ${pay.employee?.firstName} ${pay.employee?.lastName}`,
             date: date,
             icon: BanknotesIcon,
-            iconBackground: 'bg-indigo-500',
+            iconBackground: "bg-indigo-500",
           });
         }
       });
 
       // Sort activities by date (most recent first) and take only the last 5
-      return activities
-        .sort((a, b) => b.date - a.date)
-        .slice(0, 5);
+      return activities.sort((a, b) => b.date - a.date).slice(0, 5);
     };
 
     const activities = generateRecentActivities();
@@ -193,42 +215,47 @@ const Dashboard = () => {
 
   // Attendance Status Distribution
   const attendanceData = {
-    labels: ['Present', 'Absent', 'Late', 'Leave'],
+    labels: ["Present", "Absent", "Late", "Leave"],
     datasets: [
       {
         data: [
-          attendance?.filter(a => a.status === 'Present').length || 0,
-          attendance?.filter(a => a.status === 'Absent').length || 0,
-          attendance?.filter(a => a.status === 'Late').length || 0,
-          attendance?.filter(a => a.status === 'On-Leave').length || 0,
+          attendance?.filter((a) => a.status === "Present").length || 0,
+          attendance?.filter((a) => a.status === "Absent").length || 0,
+          attendance?.filter((a) => a.status === "Late").length || 0,
+          attendance?.filter((a) => a.status === "On-Leave").length || 0,
         ],
-        backgroundColor: ['#22c55e', '#ef4444', '#eab308', '#6366f1'],
+        backgroundColor: ["#22c55e", "#ef4444", "#eab308", "#6366f1"],
       },
     ],
   };
 
   // Department Employee Distribution
   const departmentData = {
-    labels: departments?.map(dept => dept.name) || [],
+    labels: departments?.map((dept) => dept.name) || [],
     datasets: [
       {
-        label: 'Number of Employees',
-        data: departments?.map(dept => {
-          // Count employees in this department
-          const count = employees?.filter(emp => 
-            emp.department && (emp.department._id === dept._id || emp.department.id === dept.id)
-          ).length || 0;
-          return count;
-        }) || [],
+        label: "Number of Employees",
+        data:
+          departments?.map((dept) => {
+            // Count employees in this department
+            const count =
+              employees?.filter(
+                (emp) =>
+                  emp.department &&
+                  (emp.department._id === dept._id ||
+                    emp.department.id === dept.id)
+              ).length || 0;
+            return count;
+          }) || [],
         backgroundColor: [
-          '#3b82f6', // blue
-          '#ef4444', // red
-          '#22c55e', // green
-          '#f59e0b', // yellow
-          '#6366f1', // indigo
-          '#ec4899', // pink
-          '#8b5cf6', // purple
-          '#14b8a6', // teal
+          "#3b82f6", // blue
+          "#ef4444", // red
+          "#22c55e", // green
+          "#f59e0b", // yellow
+          "#6366f1", // indigo
+          "#ec4899", // pink
+          "#8b5cf6", // purple
+          "#14b8a6", // teal
         ],
         borderWidth: 1,
       },
@@ -238,9 +265,9 @@ const Dashboard = () => {
   // Add console logs for debugging
   useEffect(() => {
     if (departments?.length && employees?.length) {
-      console.log('Departments:', departments);
-      console.log('Employees:', employees);
-      console.log('Department Data:', departmentData);
+      console.log("Departments:", departments);
+      console.log("Employees:", employees);
+      console.log("Department Data:", departmentData);
     }
   }, [departments, employees]);
 
@@ -255,64 +282,64 @@ const Dashboard = () => {
       tooltip: {
         callbacks: {
           label: (context) => {
-            const label = context.dataset.label || '';
+            const label = context.dataset.label || "";
             const value = context.parsed.y;
             return `${label}: ${value} employees`;
-          }
-        }
-      }
+          },
+        },
+      },
     },
     scales: {
       y: {
         beginAtZero: true,
         ticks: {
           stepSize: 1,
-          precision: 0
+          precision: 0,
         },
         title: {
           display: true,
-          text: 'Number of Employees'
-        }
+          text: "Number of Employees",
+        },
       },
       x: {
         ticks: {
           autoSkip: false,
           maxRotation: 45,
-          minRotation: 45
+          minRotation: 45,
         },
         title: {
           display: true,
-          text: 'Departments'
-        }
-      }
+          text: "Departments",
+        },
+      },
     },
   };
 
   // Leave Status Distribution
   const leaveData = {
-    labels: ['Approved', 'Pending', 'Rejected'],
+    labels: ["Approved", "Pending", "Rejected"],
     datasets: [
       {
         data: [
-          leaves?.filter(l => l.status === 'Approved').length || 0,
-          leaves?.filter(l => l.status === 'Pending').length || 0,
-          leaves?.filter(l => l.status === 'Rejected').length || 0,
+          leaves?.filter((l) => l.status === "Approved").length || 0,
+          leaves?.filter((l) => l.status === "Pending").length || 0,
+          leaves?.filter((l) => l.status === "Rejected").length || 0,
         ],
-        backgroundColor: ['#22c55e', '#eab308', '#ef4444'],
+        backgroundColor: ["#22c55e", "#eab308", "#ef4444"],
       },
     ],
   };
 
   // Monthly Payroll Trend
   const payrollData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
     datasets: [
       {
-        label: 'Total Payroll',
-        data: Array(6).fill(0).map(() => 
-          Math.floor(Math.random() * 50000) + 30000
-        ),
-        borderColor: '#6366f1',
+        label: "Total Payroll",
+        data: Array(6)
+          .fill(0)
+          .map(() => Math.floor(Math.random() * 50000) + 30000),
+        borderColor: "#6366f1",
         tension: 0.4,
       },
     ],
@@ -349,7 +376,9 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Attendance Distribution */}
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-gray-900">Attendance Distribution</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            Attendance Distribution
+          </h3>
           <div className="mt-6 h-80">
             <Doughnut
               data={attendanceData}
@@ -358,7 +387,7 @@ const Dashboard = () => {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: {
-                    position: 'bottom',
+                    position: "bottom",
                   },
                 },
               }}
@@ -368,16 +397,17 @@ const Dashboard = () => {
 
         {/* Department Employee Distribution */}
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-gray-900">Employees by Department</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            Employees by Department
+          </h3>
           <div className="mt-6 h-80">
             {departments?.length > 0 && employees?.length > 0 ? (
-              <Bar
-                data={departmentData}
-                options={departmentChartOptions}
-              />
+              <Bar data={departmentData} options={departmentChartOptions} />
             ) : (
               <div className="flex h-full items-center justify-center">
-                <p className="text-gray-500">No department or employee data available</p>
+                <p className="text-gray-500">
+                  No department or employee data available
+                </p>
               </div>
             )}
           </div>
@@ -385,7 +415,9 @@ const Dashboard = () => {
 
         {/* Leave Status Distribution */}
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-gray-900">Leave Status Distribution</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            Leave Status Distribution
+          </h3>
           <div className="mt-6 h-80">
             <Doughnut
               data={leaveData}
@@ -394,7 +426,7 @@ const Dashboard = () => {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: {
-                    position: 'bottom',
+                    position: "bottom",
                   },
                 },
               }}
@@ -404,7 +436,9 @@ const Dashboard = () => {
 
         {/* Payroll Trend */}
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-gray-900">Monthly Payroll Trend</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            Monthly Payroll Trend
+          </h3>
           <div className="mt-6 h-80">
             <Line
               data={payrollData}
@@ -451,16 +485,23 @@ const Dashboard = () => {
                           <span
                             className={`${activity.iconBackground} flex h-8 w-8 items-center justify-center rounded-full ring-8 ring-white`}
                           >
-                            <activity.icon className="h-5 w-5 text-white" aria-hidden="true" />
+                            <activity.icon
+                              className="h-5 w-5 text-white"
+                              aria-hidden="true"
+                            />
                           </span>
                         </div>
                         <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                           <div>
-                            <p className="text-sm text-gray-500">{activity.content}</p>
+                            <p className="text-sm text-gray-500">
+                              {activity.content}
+                            </p>
                           </div>
                           <div className="whitespace-nowrap text-right text-sm text-gray-500">
                             <time dateTime={activity.date.toISOString()}>
-                              {formatDistanceToNow(activity.date, { addSuffix: true })}
+                              {formatDistanceToNow(activity.date, {
+                                addSuffix: true,
+                              })}
                             </time>
                           </div>
                         </div>
@@ -481,4 +522,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

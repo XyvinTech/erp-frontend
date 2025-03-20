@@ -1,13 +1,24 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useTable, usePagination } from 'react-table';
-import { PlusIcon, PencilIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { CurrencyDollarIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
-import PersonalLoanForm from '../../components/modules/frm/PersonalLoanForm';
-import frmService from '@/services/frmService';
-import { toast } from 'react-hot-toast';
-import { format } from 'date-fns';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal';
+import { useState, useEffect, useMemo } from "react";
+import { useTable, usePagination } from "react-table";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
+import {
+  CurrencyDollarIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
+import PersonalLoanForm from "../../components/modules/frm/PersonalLoanForm";
+import frmService from "@/api/frmService";
+import { toast } from "react-hot-toast";
+import { format } from "date-fns";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 
 const PersonalLoanList = () => {
   const [showLoanForm, setShowLoanForm] = useState(false);
@@ -20,21 +31,21 @@ const PersonalLoanList = () => {
     totalAmount: 0,
     pending: 0,
     approved: 0,
-    rejected: 0
+    rejected: 0,
   });
   const [filters, setFilters] = useState({
-    status: '',
-    startDate: '',
-    endDate: ''
+    status: "",
+    startDate: "",
+    endDate: "",
   });
 
   const calculateSummaryStats = (loanData) => {
     const stats = {
       totalLoans: loanData.length,
       totalAmount: loanData.reduce((sum, loan) => sum + loan.amount, 0),
-      pending: loanData.filter(loan => loan.status === 'Pending').length,
-      approved: loanData.filter(loan => loan.status === 'Approved').length,
-      rejected: loanData.filter(loan => loan.status === 'Rejected').length
+      pending: loanData.filter((loan) => loan.status === "Pending").length,
+      approved: loanData.filter((loan) => loan.status === "Approved").length,
+      rejected: loanData.filter((loan) => loan.status === "Rejected").length,
     };
     setSummaryStats(stats);
   };
@@ -46,7 +57,7 @@ const PersonalLoanList = () => {
       setLoans(data);
       calculateSummaryStats(data);
     } catch (error) {
-      toast.error(error.message || 'Failed to fetch loans');
+      toast.error(error.message || "Failed to fetch loans");
     } finally {
       setLoading(false);
     }
@@ -66,23 +77,23 @@ const PersonalLoanList = () => {
         employmentType: data.employmentType,
         monthlyIncome: parseFloat(data.monthlyIncome),
         monthlyPayment: parseFloat(data.monthlyPayment || 0),
-        status: data.status || 'Pending',
-        documents: data.documents || []
+        status: data.status || "Pending",
+        documents: data.documents || [],
       };
 
       if (selectedLoan) {
         await frmService.updatePersonalLoan(selectedLoan._id, loanData);
-        toast.success('Loan application updated successfully');
+        toast.success("Loan application updated successfully");
       } else {
         await frmService.createPersonalLoan(loanData);
-        toast.success('Loan application submitted successfully');
+        toast.success("Loan application submitted successfully");
       }
       setShowLoanForm(false);
       setSelectedLoan(null);
       fetchLoans();
     } catch (error) {
-      console.error('Error submitting loan:', error);
-      toast.error(error.message || 'Failed to submit loan application');
+      console.error("Error submitting loan:", error);
+      toast.error(error.message || "Failed to submit loan application");
     }
   };
 
@@ -94,12 +105,12 @@ const PersonalLoanList = () => {
   const handleDelete = async () => {
     try {
       await frmService.deletePersonalLoan(selectedLoan._id);
-      toast.success('Loan application deleted successfully');
+      toast.success("Loan application deleted successfully");
       setShowDeleteConfirmation(false);
       setSelectedLoan(null);
       fetchLoans();
     } catch (error) {
-      toast.error(error.message || 'Failed to delete loan application');
+      toast.error(error.message || "Failed to delete loan application");
     }
   };
 
@@ -109,50 +120,54 @@ const PersonalLoanList = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
   const columns = useMemo(
     () => [
-      { Header: 'Purpose', accessor: 'purpose' },
+      { Header: "Purpose", accessor: "purpose" },
       {
-        Header: 'Amount',
-        accessor: 'amount',
-        Cell: ({ value }) => formatCurrency(value)
+        Header: "Amount",
+        accessor: "amount",
+        Cell: ({ value }) => formatCurrency(value),
       },
       {
-        Header: 'Interest Rate',
-        accessor: 'interestRate',
-        Cell: ({ value }) => `${value}%`
+        Header: "Interest Rate",
+        accessor: "interestRate",
+        Cell: ({ value }) => `${value}%`,
       },
       {
-        Header: 'Term',
-        accessor: 'term',
-        Cell: ({ value }) => `${value} months`
+        Header: "Term",
+        accessor: "term",
+        Cell: ({ value }) => `${value} months`,
       },
       {
-        Header: 'Monthly Payment',
-        accessor: 'monthlyPayment',
-        Cell: ({ value }) => formatCurrency(value || 0)
+        Header: "Monthly Payment",
+        accessor: "monthlyPayment",
+        Cell: ({ value }) => formatCurrency(value || 0),
       },
       {
-        Header: 'Status',
-        accessor: 'status',
+        Header: "Status",
+        accessor: "status",
         Cell: ({ value }) => (
-          <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-            value === 'Approved' ? 'bg-green-100 text-green-800' :
-            value === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800'
-          }`}>
+          <span
+            className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+              value === "Approved"
+                ? "bg-green-100 text-green-800"
+                : value === "Pending"
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
             {value}
           </span>
-        )
+        ),
       },
       {
-        Header: 'Actions',
+        Header: "Actions",
         Cell: ({ row }) => (
           <div className="flex justify-start space-x-3">
             <button
@@ -168,8 +183,8 @@ const PersonalLoanList = () => {
               <TrashIcon className="h-5 w-5" />
             </button>
           </div>
-        )
-      }
+        ),
+      },
     ],
     []
   );
@@ -190,12 +205,12 @@ const PersonalLoanList = () => {
     nextPage,
     previousPage,
     setPageSize,
-    state: { pageIndex, pageSize }
+    state: { pageIndex, pageSize },
   } = useTable(
     {
       columns,
       data,
-      initialState: { pageIndex: 0, pageSize: 10 }
+      initialState: { pageIndex: 0, pageSize: 10 },
     },
     usePagination
   );
@@ -204,9 +219,12 @@ const PersonalLoanList = () => {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Personal Loans</h1>
+          <h1 className="text-xl font-semibold text-gray-900">
+            Personal Loans
+          </h1>
           <p className="mt-2 text-sm text-gray-700">
-            A list of all personal loans including amount, interest rate, status, and repayment details.
+            A list of all personal loans including amount, interest rate,
+            status, and repayment details.
           </p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
@@ -229,14 +247,21 @@ const PersonalLoanList = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="rounded-sm bg-blue-100 p-3">
-                  <CurrencyDollarIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
+                  <CurrencyDollarIcon
+                    className="h-6 w-6 text-blue-600"
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Loans</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Total Loans
+                  </dt>
                   <dd className="flex items-baseline">
-                    <div className="text-2xl font-semibold text-gray-900">{summaryStats.totalLoans}</div>
+                    <div className="text-2xl font-semibold text-gray-900">
+                      {summaryStats.totalLoans}
+                    </div>
                     <div className="ml-2 text-sm font-medium text-gray-500">
                       {formatCurrency(summaryStats.totalAmount)}
                     </div>
@@ -253,15 +278,24 @@ const PersonalLoanList = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="rounded-sm bg-yellow-100 p-3">
-                  <ClockIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
+                  <ClockIcon
+                    className="h-6 w-6 text-yellow-600"
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Pending</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Pending
+                  </dt>
                   <dd className="flex items-baseline">
-                    <div className="text-2xl font-semibold text-gray-900">{summaryStats.pending}</div>
-                    <div className="ml-2 text-sm font-medium text-yellow-600">Awaiting Review</div>
+                    <div className="text-2xl font-semibold text-gray-900">
+                      {summaryStats.pending}
+                    </div>
+                    <div className="ml-2 text-sm font-medium text-yellow-600">
+                      Awaiting Review
+                    </div>
                   </dd>
                 </dl>
               </div>
@@ -275,15 +309,24 @@ const PersonalLoanList = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="rounded-sm bg-green-100 p-3 ">
-                  <CheckCircleIcon className="h-6 w-6 text-green-600" aria-hidden="true" />
+                  <CheckCircleIcon
+                    className="h-6 w-6 text-green-600"
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Approved</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Approved
+                  </dt>
                   <dd className="flex items-baseline">
-                    <div className="text-2xl font-semibold text-gray-900">{summaryStats.approved}</div>
-                    <div className="ml-2 text-sm font-medium text-green-600">Processed</div>
+                    <div className="text-2xl font-semibold text-gray-900">
+                      {summaryStats.approved}
+                    </div>
+                    <div className="ml-2 text-sm font-medium text-green-600">
+                      Processed
+                    </div>
                   </dd>
                 </dl>
               </div>
@@ -297,15 +340,24 @@ const PersonalLoanList = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="rounded-sm bg-red-100 p-3">
-                  <XCircleIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
+                  <XCircleIcon
+                    className="h-6 w-6 text-red-600"
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Rejected</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Rejected
+                  </dt>
                   <dd className="flex items-baseline">
-                    <div className="text-2xl font-semibold text-gray-900">{summaryStats.rejected}</div>
-                    <div className="ml-2 text-sm font-medium text-red-600">Not Approved</div>
+                    <div className="text-2xl font-semibold text-gray-900">
+                      {summaryStats.rejected}
+                    </div>
+                    <div className="ml-2 text-sm font-medium text-red-600">
+                      Not Approved
+                    </div>
                   </dd>
                 </dl>
               </div>
@@ -318,7 +370,9 @@ const PersonalLoanList = () => {
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <select
           value={filters.status}
-          onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, status: e.target.value }))
+          }
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
         >
           <option value="">All Status</option>
@@ -330,7 +384,9 @@ const PersonalLoanList = () => {
         <input
           type="date"
           value={filters.startDate}
-          onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, startDate: e.target.value }))
+          }
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
           placeholder="Start Date"
         />
@@ -338,7 +394,9 @@ const PersonalLoanList = () => {
         <input
           type="date"
           value={filters.endDate}
-          onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, endDate: e.target.value }))
+          }
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
           placeholder="End Date"
         />
@@ -358,7 +416,10 @@ const PersonalLoanList = () => {
                   prepareRow(row);
                   const loan = row.original;
                   return (
-                    <div key={loan._id} className="bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                    <div
+                      key={loan._id}
+                      className="bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                    >
                       <div className="p-4">
                         <div className="flex justify-between items-start">
                           <div>
@@ -369,30 +430,52 @@ const PersonalLoanList = () => {
                               Loan No: {loan._id}
                             </p>
                           </div>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            ${loan.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                              loan.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'}`}>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            ${
+                              loan.status === "Approved"
+                                ? "bg-green-100 text-green-800"
+                                : loan.status === "Pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
                             {loan.status}
                           </span>
                         </div>
-                        
+
                         <dl className="mt-4 grid grid-cols-2 gap-4">
                           <div>
-                            <dt className="text-sm font-medium text-gray-500">Amount</dt>
-                            <dd className="mt-1 text-sm text-gray-900">{formatCurrency(loan.amount)}</dd>
+                            <dt className="text-sm font-medium text-gray-500">
+                              Amount
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900">
+                              {formatCurrency(loan.amount)}
+                            </dd>
                           </div>
                           <div>
-                            <dt className="text-sm font-medium text-gray-500">Interest Rate</dt>
-                            <dd className="mt-1 text-sm text-gray-900">{loan.interestRate}%</dd>
+                            <dt className="text-sm font-medium text-gray-500">
+                              Interest Rate
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900">
+                              {loan.interestRate}%
+                            </dd>
                           </div>
                           <div>
-                            <dt className="text-sm font-medium text-gray-500">Term</dt>
-                            <dd className="mt-1 text-sm text-gray-900">{loan.term} months</dd>
+                            <dt className="text-sm font-medium text-gray-500">
+                              Term
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900">
+                              {loan.term} months
+                            </dd>
                           </div>
                           <div>
-                            <dt className="text-sm font-medium text-gray-500">Monthly Payment</dt>
-                            <dd className="mt-1 text-sm text-gray-900">{formatCurrency(loan.monthlyPayment || 0)}</dd>
+                            <dt className="text-sm font-medium text-gray-500">
+                              Monthly Payment
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900">
+                              {formatCurrency(loan.monthlyPayment || 0)}
+                            </dd>
                           </div>
                         </dl>
 
@@ -422,32 +505,38 @@ const PersonalLoanList = () => {
               <div className="hidden sm:block">
                 <div className="inline-block min-w-full py-2 align-middle">
                   <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-                    <table className="min-w-full divide-y divide-gray-300" {...getTableProps()}>
+                    <table
+                      className="min-w-full divide-y divide-gray-300"
+                      {...getTableProps()}
+                    >
                       <thead className="bg-gray-50">
-                        {headerGroups.map(headerGroup => (
+                        {headerGroups.map((headerGroup) => (
                           <tr {...headerGroup.getHeaderGroupProps()}>
-                            {headerGroup.headers.map(column => (
+                            {headerGroup.headers.map((column) => (
                               <th
                                 {...column.getHeaderProps()}
                                 className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
                               >
-                                {column.render('Header')}
+                                {column.render("Header")}
                               </th>
                             ))}
                           </tr>
                         ))}
                       </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white" {...getTableBodyProps()}>
-                        {page.map(row => {
+                      <tbody
+                        className="divide-y divide-gray-200 bg-white"
+                        {...getTableBodyProps()}
+                      >
+                        {page.map((row) => {
                           prepareRow(row);
                           return (
                             <tr {...row.getRowProps()}>
-                              {row.cells.map(cell => (
+                              {row.cells.map((cell) => (
                                 <td
                                   {...cell.getCellProps()}
                                   className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
                                 >
-                                  {cell.render('Cell')}
+                                  {cell.render("Cell")}
                                 </td>
                               ))}
                             </tr>
@@ -480,8 +569,8 @@ const PersonalLoanList = () => {
                 <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700">
-                      Showing page{' '}
-                      <span className="font-medium">{pageIndex + 1}</span> of{' '}
+                      Showing page{" "}
+                      <span className="font-medium">{pageIndex + 1}</span> of{" "}
                       <span className="font-medium">{pageOptions.length}</span>
                     </p>
                   </div>
@@ -509,7 +598,7 @@ const PersonalLoanList = () => {
           )}
         </div>
       </div>
-      
+
       <PersonalLoanForm
         open={showLoanForm}
         setOpen={setShowLoanForm}
@@ -528,4 +617,4 @@ const PersonalLoanList = () => {
   );
 };
 
-export default PersonalLoanList; 
+export default PersonalLoanList;

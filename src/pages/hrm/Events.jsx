@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useTable, useSortBy, usePagination } from 'react-table';
-import { toast } from 'react-hot-toast';
+import { useEffect, useState, useMemo } from "react";
+import { useTable, useSortBy, usePagination } from "react-table";
+import { toast } from "react-hot-toast";
 import {
   PlusIcon,
   PencilIcon,
@@ -9,68 +9,75 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-} from '@heroicons/react/24/outline';
-import useHrmStore from '../../store/hrm/useHrmStore';
-import EventModal from '../../components/modules/hrm/EventModal';
-import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
+} from "@heroicons/react/24/outline";
+import useHrmStore from "../../stores/useHrmStore";
+import EventModal from "../../components/modules/hrm/EventModal";
+import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 
 const Events = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, event: null });
-  const { events, eventsLoading, eventsError, fetchEvents, deleteEvent } = useHrmStore();
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    event: null,
+  });
+  const { events, eventsLoading, eventsError, fetchEvents, deleteEvent } =
+    useHrmStore();
 
   useEffect(() => {
-    fetchEvents();
+    fetchEvents().catch((err) => {
+      console.error("Error fetching events:", err);
+    });
   }, [fetchEvents]);
 
   const columns = useMemo(
     () => [
       {
-        Header: 'Title',
-        accessor: 'title',
+        Header: "Title",
+        accessor: "title",
       },
       {
-        Header: 'Description',
-        accessor: 'description',
-        Cell: ({ value }) => (
-          <span className="line-clamp-2">{value}</span>
-        ),
+        Header: "Description",
+        accessor: "description",
+        Cell: ({ value }) => <span className="line-clamp-2">{value}</span>,
       },
       {
-        Header: 'Start Date',
-        accessor: 'startDate',
-        Cell: ({ value }) => value ? new Date(value).toLocaleDateString() : '-',
+        Header: "Start Date",
+        accessor: "startDate",
+        Cell: ({ value }) =>
+          value ? new Date(value).toLocaleDateString() : "-",
       },
       {
-        Header: 'End Date',
-        accessor: 'endDate',
-        Cell: ({ value }) => value ? new Date(value).toLocaleDateString() : '-',
+        Header: "End Date",
+        accessor: "endDate",
+        Cell: ({ value }) =>
+          value ? new Date(value).toLocaleDateString() : "-",
       },
       {
-        Header: 'Status',
-        accessor: 'status',
+        Header: "Status",
+        accessor: "status",
         Cell: ({ value }) => {
           const statusColors = {
-            upcoming: 'bg-blue-100 text-blue-800',
-            ongoing: 'bg-green-100 text-green-800',
-            completed: 'bg-gray-100 text-gray-800',
+            upcoming: "bg-blue-100 text-blue-800",
+            ongoing: "bg-green-100 text-green-800",
+            completed: "bg-gray-100 text-gray-800",
           };
 
           return (
             <span
               className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                statusColors[value?.toLowerCase()] || 'bg-gray-100 text-gray-800'
+                statusColors[value?.toLowerCase()] ||
+                "bg-gray-100 text-gray-800"
               }`}
             >
-              {value?.charAt(0).toUpperCase() + value?.slice(1) || 'Unknown'}
+              {value?.charAt(0).toUpperCase() + value?.slice(1) || "Unknown"}
             </span>
           );
         },
       },
       {
-        Header: 'Actions',
-        id: 'actions',
+        Header: "Actions",
+        id: "actions",
         Cell: ({ row }) => (
           <div className="flex space-x-2">
             <button
@@ -96,36 +103,38 @@ const Events = () => {
 
   const data = useMemo(() => {
     if (!events) {
-      console.log('Events is undefined');
+      console.log("Events is undefined");
       return [];
     }
-    
+
     if (!Array.isArray(events)) {
-      console.log('Events is not an array:', events);
+      console.log("Events is not an array:", events);
       return [];
     }
 
-    return events.map(event => {
-      if (!event || !event._id) {
-        console.log('Invalid event object:', event);
-        return null;
-      }
+    return events
+      .map((event) => {
+        if (!event || !event._id) {
+          console.log("Invalid event object:", event);
+          return null;
+        }
 
-      // Ensure dates are properly formatted
-      const startDate = event.startDate ? new Date(event.startDate) : null;
-      const endDate = event.endDate ? new Date(event.endDate) : null;
-      const createdAt = event.createdAt ? new Date(event.createdAt) : null;
-      const updatedAt = event.updatedAt ? new Date(event.updatedAt) : null;
+        // Ensure dates are properly formatted
+        const startDate = event.startDate ? new Date(event.startDate) : null;
+        const endDate = event.endDate ? new Date(event.endDate) : null;
+        const createdAt = event.createdAt ? new Date(event.createdAt) : null;
+        const updatedAt = event.updatedAt ? new Date(event.updatedAt) : null;
 
-      return {
-        ...event,
-        id: event._id,
-        startDate,
-        endDate,
-        createdAt,
-        updatedAt
-      };
-    }).filter(Boolean); // Remove any null entries
+        return {
+          ...event,
+          id: event._id,
+          startDate,
+          endDate,
+          createdAt,
+          updatedAt,
+        };
+      })
+      .filter(Boolean); // Remove any null entries
   }, [events]);
 
   const {
@@ -148,7 +157,7 @@ const Events = () => {
       columns,
       data: data || [], // Ensure data is always an array
       initialState: { pageIndex: 0, pageSize: 10 },
-      getRowId: row => row?.id || 'undefined' // Provide fallback for missing id
+      getRowId: (row) => row?.id || "undefined", // Provide fallback for missing id
     },
     useSortBy,
     usePagination
@@ -166,11 +175,11 @@ const Events = () => {
   const handleDelete = async () => {
     try {
       await deleteEvent(deleteModal.event._id);
-      toast.success('Event deleted successfully');
+      toast.success("Event deleted successfully");
       setDeleteModal({ isOpen: false, event: null });
     } catch (error) {
-      console.error('Error deleting event:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete event');
+      console.error("Error deleting event:", error);
+      toast.error(error.response?.data?.message || "Failed to delete event");
     }
   };
 
@@ -225,10 +234,14 @@ const Events = () => {
         <>
           <div className="overflow-x-auto">
             <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full divide-y divide-gray-300" {...getTableProps()}>
+              <table
+                className="min-w-full divide-y divide-gray-300"
+                {...getTableProps()}
+              >
                 <thead>
                   {headerGroups.map((headerGroup) => {
-                    const { key, ...headerGroupProps } = headerGroup.getHeaderGroupProps();
+                    const { key, ...headerGroupProps } =
+                      headerGroup.getHeaderGroupProps();
                     return (
                       <tr key={key} {...headerGroupProps}>
                         {headerGroup.headers.map((column) => {
@@ -242,7 +255,7 @@ const Events = () => {
                               className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                             >
                               <div className="group inline-flex">
-                                {column.render('Header')}
+                                {column.render("Header")}
                                 <span className="ml-2 flex-none rounded">
                                   {column.isSorted ? (
                                     column.isSortedDesc ? (
@@ -260,7 +273,10 @@ const Events = () => {
                     );
                   })}
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white" {...getTableBodyProps()}>
+                <tbody
+                  className="divide-y divide-gray-200 bg-white"
+                  {...getTableBodyProps()}
+                >
                   {page.map((row) => {
                     prepareRow(row);
                     const { key, ...rowProps } = row.getRowProps();
@@ -274,7 +290,7 @@ const Events = () => {
                               {...cellProps}
                               className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
                             >
-                              {cell.render('Cell')}
+                              {cell.render("Cell")}
                             </td>
                           );
                         })}
@@ -307,8 +323,8 @@ const Events = () => {
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Showing page{' '}
-                  <span className="font-medium">{pageIndex + 1}</span> of{' '}
+                  Showing page{" "}
+                  <span className="font-medium">{pageIndex + 1}</span> of{" "}
                   <span className="font-medium">{pageOptions.length}</span>
                 </p>
               </div>

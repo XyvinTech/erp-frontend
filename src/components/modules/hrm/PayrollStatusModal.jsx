@@ -1,32 +1,33 @@
-import { Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-hot-toast';
-import * as hrmService from '../../../services/hrm/hrmService';
+import { Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { toast } from "react-hot-toast";
+import useHrmStore from "@/stores/useHrmStore";
 
 const validationSchema = Yup.object({
   status: Yup.string()
-    .required('Status is required')
-    .oneOf(['pending', 'processed', 'paid'], 'Invalid status'),
-  remarks: Yup.string()
+    .required("Status is required")
+    .oneOf(["pending", "processed", "paid"], "Invalid status"),
+  remarks: Yup.string(),
 });
 
 const PayrollStatusModal = ({ payroll, onClose, onSuccess }) => {
+  const { updatePayroll } = useHrmStore();
   const formik = useFormik({
     initialValues: {
-      status: payroll?.status || 'pending',
-      remarks: payroll?.remarks || ''
+      status: payroll?.status || "pending",
+      remarks: payroll?.remarks || "",
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
-        await hrmService.updatePayroll(payroll._id, values);
-        toast.success('Payroll status updated successfully');
+        await updatePayroll(payroll._id, values);
+        toast.success("Payroll status updated successfully");
         onSuccess();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Something went wrong');
+        toast.error(error.response?.data?.message || "Something went wrong");
       }
     },
   });
@@ -81,49 +82,68 @@ const PayrollStatusModal = ({ payroll, onClose, onSuccess }) => {
                     </Dialog.Title>
 
                     <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Employee Details</h4>
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">
+                        Employee Details
+                      </h4>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-gray-500">Name</p>
-                          <p className="font-medium">{payroll.employee?.firstName} {payroll.employee?.lastName}</p>
+                          <p className="font-medium">
+                            {payroll.employee?.firstName}{" "}
+                            {payroll.employee?.lastName}
+                          </p>
                         </div>
                         <div>
                           <p className="text-gray-500">Position</p>
-                          <p className="font-medium">{payroll.employee?.position?.title}</p>
+                          <p className="font-medium">
+                            {payroll.employee?.position?.title}
+                          </p>
                         </div>
                         <div>
                           <p className="text-gray-500">Department</p>
-                          <p className="font-medium">{payroll.employee?.department?.name}</p>
+                          <p className="font-medium">
+                            {payroll.employee?.department?.name}
+                          </p>
                         </div>
                         <div>
                           <p className="text-gray-500">Net Salary</p>
-                          <p className="font-medium">${payroll.netSalary?.toLocaleString()}</p>
+                          <p className="font-medium">
+                            ${payroll.netSalary?.toLocaleString()}
+                          </p>
                         </div>
                       </div>
                     </div>
 
                     <form onSubmit={formik.handleSubmit} className="space-y-4">
                       <div>
-                        <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="status"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Status
                         </label>
                         <select
                           id="status"
                           name="status"
                           className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-black focus:outline-none focus:ring-black sm:text-sm"
-                          {...formik.getFieldProps('status')}
+                          {...formik.getFieldProps("status")}
                         >
                           <option value="pending">Pending</option>
                           <option value="processed">Processed</option>
                           <option value="paid">Paid</option>
                         </select>
                         {formik.touched.status && formik.errors.status && (
-                          <p className="mt-1 text-sm text-red-600">{formik.errors.status}</p>
+                          <p className="mt-1 text-sm text-red-600">
+                            {formik.errors.status}
+                          </p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="remarks" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="remarks"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Remarks
                         </label>
                         <textarea
@@ -132,10 +152,12 @@ const PayrollStatusModal = ({ payroll, onClose, onSuccess }) => {
                           rows={3}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black sm:text-sm"
                           placeholder="Add any notes or comments..."
-                          {...formik.getFieldProps('remarks')}
+                          {...formik.getFieldProps("remarks")}
                         />
                         {formik.touched.remarks && formik.errors.remarks && (
-                          <p className="mt-1 text-sm text-red-600">{formik.errors.remarks}</p>
+                          <p className="mt-1 text-sm text-red-600">
+                            {formik.errors.remarks}
+                          </p>
                         )}
                       </div>
 
@@ -166,4 +188,4 @@ const PayrollStatusModal = ({ payroll, onClose, onSuccess }) => {
   );
 };
 
-export default PayrollStatusModal; 
+export default PayrollStatusModal;

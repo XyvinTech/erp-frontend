@@ -1,11 +1,18 @@
-import { Fragment, useState, useEffect } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { ClockIcon, ExclamationCircleIcon, CalendarIcon, MoonIcon, SunIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-hot-toast';
-import useHrmStore from '../../../store/hrm/useHrmStore';
+import { Fragment, useState, useEffect } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  ClockIcon,
+  ExclamationCircleIcon,
+  CalendarIcon,
+  MoonIcon,
+  SunIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { toast } from "react-hot-toast";
+import useHrmStore from "../../../stores/useHrmStore";
 
 const AttendanceModal = ({ onClose, onSuccess }) => {
   const [activeEmployees, setActiveEmployees] = useState([]);
@@ -14,48 +21,50 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
 
   // Add status icons mapping
   const statusIcons = {
-    'Present': <SunIcon className="h-5 w-5 text-green-500" />,
-    'Late': <ClockIcon className="h-5 w-5 text-yellow-500" />,
-    'Early-Leave': <ArrowRightOnRectangleIcon className="h-5 w-5 text-orange-500" />,
-    'Half-Day': <CalendarIcon className="h-5 w-5 text-blue-500" />,
-    'On-Leave': <ExclamationCircleIcon className="h-5 w-5 text-purple-500" />,
-    'Absent': <ExclamationCircleIcon className="h-5 w-5 text-red-500" />,
-    'Holiday': <CalendarIcon className="h-5 w-5 text-green-500" />,
-    'Day-Off': <MoonIcon className="h-5 w-5 text-gray-500" />
+    Present: <SunIcon className="h-5 w-5 text-green-500" />,
+    Late: <ClockIcon className="h-5 w-5 text-yellow-500" />,
+    "Early-Leave": (
+      <ArrowRightOnRectangleIcon className="h-5 w-5 text-orange-500" />
+    ),
+    "Half-Day": <CalendarIcon className="h-5 w-5 text-blue-500" />,
+    "On-Leave": <ExclamationCircleIcon className="h-5 w-5 text-purple-500" />,
+    Absent: <ExclamationCircleIcon className="h-5 w-5 text-red-500" />,
+    Holiday: <CalendarIcon className="h-5 w-5 text-green-500" />,
+    "Day-Off": <MoonIcon className="h-5 w-5 text-gray-500" />,
   };
 
   // Add automatic notes based on status
   const getDefaultNotes = (status) => {
     switch (status) {
-      case 'Late':
-        return 'Employee arrived late';
-      case 'Early-Leave':
-        return 'Employee left early';
-      case 'Half-Day':
-        return 'Half day attendance';
-      case 'On-Leave':
-        return 'Employee on leave';
-      case 'Absent':
-        return 'Employee absent';
-      case 'Holiday':
-        return 'Holiday';
-      case 'Day-Off':
-        return 'Scheduled day off';
+      case "Late":
+        return "Employee arrived late";
+      case "Early-Leave":
+        return "Employee left early";
+      case "Half-Day":
+        return "Half day attendance";
+      case "On-Leave":
+        return "Employee on leave";
+      case "Absent":
+        return "Employee absent";
+      case "Holiday":
+        return "Holiday";
+      case "Day-Off":
+        return "Scheduled day off";
       default:
-        return '';
+        return "";
     }
   };
 
   useEffect(() => {
     const loadEmployees = async () => {
       try {
-        const employees = await fetchEmployees({ status: 'active' });
-        console.log('Loaded employees:', employees);
+        const employees = await fetchEmployees({ status: "active" });
+        console.log("Loaded employees:", employees);
         setActiveEmployees(employees);
         setFilteredEmployees(employees);
       } catch (error) {
-        console.error('Error loading employees:', error);
-        toast.error('Failed to load employees');
+        console.error("Error loading employees:", error);
+        toast.error("Failed to load employees");
       }
     };
     loadEmployees();
@@ -63,43 +72,64 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
 
   const formik = useFormik({
     initialValues: {
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().split(' ')[0].slice(0, 5),
-      type: 'checkIn',
+      date: new Date().toISOString().split("T")[0],
+      time: new Date().toTimeString().split(" ")[0].slice(0, 5),
+      type: "checkIn",
       selectedEmployees: [],
-      status: 'Present',
-      shift: 'Morning',
-      notes: ''
+      status: "Present",
+      shift: "Morning",
+      notes: "",
     },
     validationSchema: Yup.object({
-      date: Yup.date().required('Date is required'),
-      time: Yup.string().required('Time is required'),
-      type: Yup.string().oneOf(['checkIn', 'checkOut']).required('Type is required'),
-      selectedEmployees: Yup.array().min(1, 'Select at least one employee'),
-      status: Yup.string().oneOf(['Present', 'Late', 'Early-Leave', 'Half-Day', 'On-Leave', 'Absent', 'Holiday', 'Day-Off']).required('Status is required'),
-      shift: Yup.string().oneOf(['Morning', 'Evening', 'Night']).required('Shift is required'),
-      notes: Yup.string().max(500, 'Notes must be less than 500 characters')
+      date: Yup.date().required("Date is required"),
+      time: Yup.string().required("Time is required"),
+      type: Yup.string()
+        .oneOf(["checkIn", "checkOut"])
+        .required("Type is required"),
+      selectedEmployees: Yup.array().min(1, "Select at least one employee"),
+      status: Yup.string()
+        .oneOf([
+          "Present",
+          "Late",
+          "Early-Leave",
+          "Half-Day",
+          "On-Leave",
+          "Absent",
+          "Holiday",
+          "Day-Off",
+        ])
+        .required("Status is required"),
+      shift: Yup.string()
+        .oneOf(["Morning", "Evening", "Night"])
+        .required("Shift is required"),
+      notes: Yup.string().max(500, "Notes must be less than 500 characters"),
     }),
     onSubmit: async (values) => {
       try {
-        console.log('Selected employees before validation:', values.selectedEmployees); // Debug log
-        if (!values.selectedEmployees || values.selectedEmployees.length === 0) {
-          toast.error('Please select at least one employee');
+        console.log(
+          "Selected employees before validation:",
+          values.selectedEmployees
+        ); // Debug log
+        if (
+          !values.selectedEmployees ||
+          values.selectedEmployees.length === 0
+        ) {
+          toast.error("Please select at least one employee");
           return;
         }
 
         const validEmployeeIds = values.selectedEmployees
-          .filter(id => id && String(id).trim() !== '')
-          .map(id => String(id).trim());
-        
-        console.log('Valid employee IDs:', validEmployeeIds); // Debug log
-        
+          .filter((id) => id && String(id).trim() !== "")
+          .map((id) => String(id).trim());
+
+        console.log("Valid employee IDs:", validEmployeeIds); // Debug log
+
         if (validEmployeeIds.length === 0) {
-          toast.error('No valid employees selected');
+          toast.error("No valid employees selected");
           return;
         }
 
-        const attendanceData = validEmployeeIds.map(employeeId => {
+        const attendanceData = validEmployeeIds.map((employeeId) => {
           const datetime = new Date(`${values.date}T${values.time}`);
           return {
             employee: employeeId,
@@ -107,37 +137,38 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
             [values.type]: datetime,
             status: values.status,
             shift: values.shift,
-            notes: values.notes
+            notes: values.notes,
           };
         });
 
-        console.log('Attendance data to be sent:', attendanceData); // Debug log
+        console.log("Attendance data to be sent:", attendanceData); // Debug log
         await createBulkAttendance(attendanceData);
-        toast.success('Attendance recorded successfully');
+        toast.success("Attendance recorded successfully");
         onSuccess();
       } catch (error) {
-        console.error('Attendance Error:', error);
-        const errorMessage = error.response?.data?.error?.message || 
-                           error.response?.data?.message || 
-                           'Failed to record attendance';
+        console.error("Attendance Error:", error);
+        const errorMessage =
+          error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          "Failed to record attendance";
         toast.error(errorMessage);
       }
-    }
+    },
   });
 
   const handleEmployeeSelection = (employeeId, checked) => {
-    console.log('Handling employee selection:', { employeeId, checked }); // Debug log
+    console.log("Handling employee selection:", { employeeId, checked }); // Debug log
     const currentSelected = [...formik.values.selectedEmployees];
     let newSelected;
-    
+
     if (checked) {
       newSelected = [...currentSelected, employeeId];
     } else {
-      newSelected = currentSelected.filter(id => id !== employeeId);
+      newSelected = currentSelected.filter((id) => id !== employeeId);
     }
-    
-    console.log('New selected employees:', newSelected); // Debug log
-    formik.setFieldValue('selectedEmployees', newSelected);
+
+    console.log("New selected employees:", newSelected); // Debug log
+    formik.setFieldValue("selectedEmployees", newSelected);
   };
 
   return (
@@ -187,10 +218,16 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
                       Record Bulk Attendance
                     </Dialog.Title>
 
-                    <form onSubmit={formik.handleSubmit} className="mt-6 space-y-4">
+                    <form
+                      onSubmit={formik.handleSubmit}
+                      className="mt-6 space-y-4"
+                    >
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="date"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Date
                           </label>
                           <input
@@ -198,15 +235,20 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
                             id="date"
                             name="date"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            {...formik.getFieldProps('date')}
+                            {...formik.getFieldProps("date")}
                           />
                           {formik.touched.date && formik.errors.date && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.date}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {formik.errors.date}
+                            </p>
                           )}
                         </div>
 
                         <div>
-                          <label htmlFor="time" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="time"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Time
                           </label>
                           <input
@@ -214,33 +256,43 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
                             id="time"
                             name="time"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            {...formik.getFieldProps('time')}
+                            {...formik.getFieldProps("time")}
                           />
                           {formik.touched.time && formik.errors.time && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.time}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {formik.errors.time}
+                            </p>
                           )}
                         </div>
 
                         <div>
-                          <label htmlFor="type" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="type"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Type
                           </label>
                           <select
                             id="type"
                             name="type"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            {...formik.getFieldProps('type')}
+                            {...formik.getFieldProps("type")}
                           >
                             <option value="checkIn">Check In</option>
                             <option value="checkOut">Check Out</option>
                           </select>
                           {formik.touched.type && formik.errors.type && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.type}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {formik.errors.type}
+                            </p>
                           )}
                         </div>
 
                         <div>
-                          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="status"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Status
                           </label>
                           <div className="relative">
@@ -248,20 +300,26 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
                               id="status"
                               name="status"
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm pl-10"
-                              {...formik.getFieldProps('status')}
+                              {...formik.getFieldProps("status")}
                               onChange={(e) => {
                                 formik.handleChange(e);
                                 // Set default notes when status changes
                                 const newStatus = e.target.value;
                                 const currentNotes = formik.values.notes;
                                 const defaultNotes = getDefaultNotes(newStatus);
-                                if (!currentNotes || currentNotes === getDefaultNotes(formik.values.status)) {
-                                  formik.setFieldValue('notes', defaultNotes);
+                                if (
+                                  !currentNotes ||
+                                  currentNotes ===
+                                    getDefaultNotes(formik.values.status)
+                                ) {
+                                  formik.setFieldValue("notes", defaultNotes);
                                 }
                               }}
                             >
-                              {Object.keys(statusIcons).map(status => (
-                                <option key={status} value={status}>{status}</option>
+                              {Object.keys(statusIcons).map((status) => (
+                                <option key={status} value={status}>
+                                  {status}
+                                </option>
                               ))}
                             </select>
                             <div className="absolute left-2 top-1/2 transform -translate-y-1/2">
@@ -269,31 +327,41 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
                             </div>
                           </div>
                           {formik.touched.status && formik.errors.status && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.status}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {formik.errors.status}
+                            </p>
                           )}
                         </div>
 
                         <div>
-                          <label htmlFor="shift" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="shift"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Shift
                           </label>
                           <select
                             id="shift"
                             name="shift"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            {...formik.getFieldProps('shift')}
+                            {...formik.getFieldProps("shift")}
                           >
                             <option value="Morning">Morning</option>
                             <option value="Evening">Evening</option>
                             <option value="Night">Night</option>
                           </select>
                           {formik.touched.shift && formik.errors.shift && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.shift}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {formik.errors.shift}
+                            </p>
                           )}
                         </div>
 
                         <div className="col-span-2">
-                          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="notes"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Notes
                           </label>
                           <div className="relative">
@@ -303,14 +371,16 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
                               rows={2}
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                               placeholder="Add any additional notes..."
-                              {...formik.getFieldProps('notes')}
+                              {...formik.getFieldProps("notes")}
                             />
                             <div className="absolute right-2 top-2">
                               {statusIcons[formik.values.status]}
                             </div>
                           </div>
                           {formik.touched.notes && formik.errors.notes && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.notes}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {formik.errors.notes}
+                            </p>
                           )}
                         </div>
 
@@ -329,10 +399,17 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
                                   setFilteredEmployees(activeEmployees);
                                   return;
                                 }
-                                const filtered = activeEmployees.filter(emp => 
-                                  (emp.firstName || '').toLowerCase().includes(searchTerm) ||
-                                  (emp.lastName || '').toLowerCase().includes(searchTerm) ||
-                                  (emp.employeeId || '').toLowerCase().includes(searchTerm)
+                                const filtered = activeEmployees.filter(
+                                  (emp) =>
+                                    (emp.firstName || "")
+                                      .toLowerCase()
+                                      .includes(searchTerm) ||
+                                    (emp.lastName || "")
+                                      .toLowerCase()
+                                      .includes(searchTerm) ||
+                                    (emp.employeeId || "")
+                                      .toLowerCase()
+                                      .includes(searchTerm)
                                 );
                                 setFilteredEmployees(filtered);
                               }}
@@ -344,11 +421,20 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
                                 <input
                                   type="checkbox"
                                   id="select-all-employees"
-                                  checked={filteredEmployees.length > 0 && formik.values.selectedEmployees.length === activeEmployees.length}
+                                  checked={
+                                    filteredEmployees.length > 0 &&
+                                    formik.values.selectedEmployees.length ===
+                                      activeEmployees.length
+                                  }
                                   onChange={(e) => {
                                     const isChecked = e.target.checked;
-                                    const allEmployeeIds = isChecked ? filteredEmployees.map(emp => emp.id) : [];
-                                    formik.setFieldValue('selectedEmployees', allEmployeeIds);
+                                    const allEmployeeIds = isChecked
+                                      ? filteredEmployees.map((emp) => emp.id)
+                                      : [];
+                                    formik.setFieldValue(
+                                      "selectedEmployees",
+                                      allEmployeeIds
+                                    );
                                   }}
                                   className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
@@ -361,28 +447,42 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
                               </div>
                             </div>
                             {filteredEmployees.map((employee) => (
-                              <div key={employee.id} className="flex items-center space-x-2 py-1">
+                              <div
+                                key={employee.id}
+                                className="flex items-center space-x-2 py-1"
+                              >
                                 <input
                                   type="checkbox"
                                   id={`employee-${employee.id}`}
                                   name="selectedEmployees"
                                   value={employee.id}
-                                  checked={formik.values.selectedEmployees.includes(employee.id)}
-                                  onChange={(e) => handleEmployeeSelection(employee.id, e.target.checked)}
+                                  checked={formik.values.selectedEmployees.includes(
+                                    employee.id
+                                  )}
+                                  onChange={(e) =>
+                                    handleEmployeeSelection(
+                                      employee.id,
+                                      e.target.checked
+                                    )
+                                  }
                                   className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
                                 <label
                                   htmlFor={`employee-${employee.id}`}
                                   className="text-sm text-gray-700 cursor-pointer"
                                 >
-                                  {employee.firstName} {employee.lastName} ({employee.employeeId || 'No ID'})
+                                  {employee.firstName} {employee.lastName} (
+                                  {employee.employeeId || "No ID"})
                                 </label>
                               </div>
                             ))}
                           </div>
-                          {formik.touched.selectedEmployees && formik.errors.selectedEmployees && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.selectedEmployees}</p>
-                          )}
+                          {formik.touched.selectedEmployees &&
+                            formik.errors.selectedEmployees && (
+                              <p className="mt-1 text-sm text-red-600">
+                                {formik.errors.selectedEmployees}
+                              </p>
+                            )}
                         </div>
                       </div>
 
@@ -413,4 +513,4 @@ const AttendanceModal = ({ onClose, onSuccess }) => {
   );
 };
 
-export default AttendanceModal; 
+export default AttendanceModal;

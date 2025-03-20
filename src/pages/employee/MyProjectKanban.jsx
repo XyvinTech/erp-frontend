@@ -1,20 +1,49 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { useProjectStore } from '../../stores/projectStore';
-import { useEmployeeStore } from '../../stores/employeeStore';
-import { PlusIcon, PaperClipIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
-import { toast } from 'react-hot-toast';
-import TaskModal from '../../components/modules/TaskModal';
-import TaskDetailModal from '../../components/modules/TaskDetailModal';
-import { taskService } from '../../services/task.service';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { useProjectStore } from "../../stores/projectStore";
+import useHrmStore from "../../stores/useHrmStore";
+import {
+  PlusIcon,
+  PaperClipIcon,
+  ChatBubbleLeftIcon,
+} from "@heroicons/react/24/outline";
+import { toast } from "react-hot-toast";
+import TaskModal from "../../components/modules/TaskModal";
+import TaskDetailModal from "../../components/modules/TaskDetailModal";
+import { taskService } from "../../api/task.service";
 
 const statusOptions = [
-  { value: 'planning', label: 'Planning', bgColor: 'bg-gray-100', textColor: 'text-gray-800' },
-  { value: 'in-progress', label: 'In Progress', bgColor: 'bg-blue-100', textColor: 'text-blue-800' },
-  { value: 'on-hold', label: 'On Hold', bgColor: 'bg-yellow-100', textColor: 'text-yellow-800' },
-  { value: 'completed', label: 'Completed', bgColor: 'bg-green-100', textColor: 'text-green-800' },
-  { value: 'cancelled', label: 'Cancelled', bgColor: 'bg-red-100', textColor: 'text-red-800' }
+  {
+    value: "planning",
+    label: "Planning",
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-800",
+  },
+  {
+    value: "in-progress",
+    label: "In Progress",
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-800",
+  },
+  {
+    value: "on-hold",
+    label: "On Hold",
+    bgColor: "bg-yellow-100",
+    textColor: "text-yellow-800",
+  },
+  {
+    value: "completed",
+    label: "Completed",
+    bgColor: "bg-green-100",
+    textColor: "text-green-800",
+  },
+  {
+    value: "cancelled",
+    label: "Cancelled",
+    bgColor: "bg-red-100",
+    textColor: "text-red-800",
+  },
 ];
 
 const TaskCard = ({ task, index, onTaskClick }) => {
@@ -28,28 +57,37 @@ const TaskCard = ({ task, index, onTaskClick }) => {
           onClick={() => onTaskClick(task)}
           className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-3 cursor-pointer hover:shadow-md transition-shadow"
         >
-          <h3 className="text-sm font-medium text-gray-900 mb-1">{task.title}</h3>
-          <p className="text-xs text-gray-500 line-clamp-2 mb-2">{task.description}</p>
-          
+          <h3 className="text-sm font-medium text-gray-900 mb-1">
+            {task.title}
+          </h3>
+          <p className="text-xs text-gray-500 line-clamp-2 mb-2">
+            {task.description}
+          </p>
+
           <div className="flex items-center justify-between text-xs text-gray-500">
             <div className="flex items-center space-x-2">
               {task.assignee && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100">
-                  {task.assignee.name || task.assignee.firstName ? 
-                    `${task.assignee.firstName || ''} ${task.assignee.lastName || ''}`.trim() || task.assignee.name : 
-                    'Assigned'
-                  }
+                  {task.assignee.name || task.assignee.firstName
+                    ? `${task.assignee.firstName || ""} ${
+                        task.assignee.lastName || ""
+                      }`.trim() || task.assignee.name
+                    : "Assigned"}
                 </span>
               )}
-              <span className={`px-2 py-1 rounded-full ${
-                task.priority === 'high' ? 'bg-red-100 text-red-800' :
-                task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-green-100 text-green-800'
-              }`}>
+              <span
+                className={`px-2 py-1 rounded-full ${
+                  task.priority === "high"
+                    ? "bg-red-100 text-red-800"
+                    : task.priority === "medium"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-green-100 text-green-800"
+                }`}
+              >
                 {task.priority}
               </span>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               {task.attachments?.length > 0 && (
                 <span className="flex items-center">
@@ -71,7 +109,13 @@ const TaskCard = ({ task, index, onTaskClick }) => {
   );
 };
 
-const KanbanColumn = ({ title, tasks = [], status, projectId, onTaskClick }) => {
+const KanbanColumn = ({
+  title,
+  tasks = [],
+  status,
+  projectId,
+  onTaskClick,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -95,10 +139,10 @@ const KanbanColumn = ({ title, tasks = [], status, projectId, onTaskClick }) => 
             ref={provided.innerRef}
             {...provided.droppableProps}
             className="flex-1"
-            style={{ 
-              minHeight: '100px',
-              maxHeight: 'calc(100vh - 250px)',
-              overflowY: 'auto'
+            style={{
+              minHeight: "100px",
+              maxHeight: "calc(100vh - 250px)",
+              overflowY: "auto",
             }}
           >
             <div className="space-y-3">
@@ -129,8 +173,9 @@ const KanbanColumn = ({ title, tasks = [], status, projectId, onTaskClick }) => 
 const MyProjectKanban = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { projects, fetchProjects, updateProject, fetchProject } = useProjectStore();
-  const { employees, fetchEmployees } = useEmployeeStore();
+  const { projects, fetchProjects, updateProject, fetchProject } =
+    useProjectStore();
+  const { employees, fetchEmployees } = useHrmStore();
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -142,17 +187,21 @@ const MyProjectKanban = () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // First load project data
         const projectsData = await fetchProjects();
-        const project = projectsData.find(p => p._id === projectId || p.id === projectId);
-        
+        const project = projectsData.find(
+          (p) => p._id === projectId || p.id === projectId
+        );
+
         if (!project) {
           try {
             await fetchProject(projectId);
           } catch (projectError) {
-            console.error('Error fetching specific project:', projectError);
-            throw new Error('Project not found or you do not have access to it');
+            console.error("Error fetching specific project:", projectError);
+            throw new Error(
+              "Project not found or you do not have access to it"
+            );
           }
         }
 
@@ -160,22 +209,29 @@ const MyProjectKanban = () => {
         try {
           await fetchEmployees();
         } catch (employeeError) {
-          console.warn('Could not load employee data:', employeeError);
+          console.warn("Could not load employee data:", employeeError);
           // Continue without employee data
         }
 
         // Load tasks
         await loadTasks();
-        
       } catch (error) {
-        console.error('Error loading data:', error);
-        setError(error?.response?.data?.message || error?.message || 'Failed to load project data');
-        toast.error(error?.response?.data?.message || error?.message || 'Failed to load project data');
+        console.error("Error loading data:", error);
+        setError(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to load project data"
+        );
+        toast.error(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to load project data"
+        );
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     if (projectId) {
       loadData();
     }
@@ -184,11 +240,11 @@ const MyProjectKanban = () => {
   const loadTasks = async () => {
     try {
       const projectTasks = await taskService.getProjectTasks(projectId);
-      console.log('Loaded tasks:', projectTasks);
+      console.log("Loaded tasks:", projectTasks);
       setTasks(projectTasks || []);
     } catch (error) {
-      console.error('Error loading tasks:', error);
-      toast.error('Failed to load tasks. Please try again.');
+      console.error("Error loading tasks:", error);
+      toast.error("Failed to load tasks. Please try again.");
       setTasks([]);
     }
   };
@@ -201,20 +257,27 @@ const MyProjectKanban = () => {
 
     try {
       const newStatus = destination.droppableId;
-      console.log('Updating task status:', { taskId: draggableId, status: newStatus });
-      
+      console.log("Updating task status:", {
+        taskId: draggableId,
+        status: newStatus,
+      });
+
       await taskService.updateTaskStatus(draggableId, newStatus);
       await loadTasks();
-      toast.success('Task status updated successfully');
+      toast.success("Task status updated successfully");
     } catch (error) {
-      console.error('Error updating task status:', error);
-      toast.error(error?.response?.data?.message || 'Failed to update task status');
+      console.error("Error updating task status:", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to update task status"
+      );
       // Refresh tasks to ensure UI is in sync with server state
       await loadTasks();
     }
   };
 
-  const project = projects.find(p => p._id === projectId || p.id === projectId);
+  const project = projects.find(
+    (p) => p._id === projectId || p.id === projectId
+  );
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value;
@@ -225,33 +288,36 @@ const MyProjectKanban = () => {
       const updatedProject = {
         name: project.name,
         description: project.description,
-        client: typeof project.client === 'object' ? project.client._id || project.client.id : project.client,
+        client:
+          typeof project.client === "object"
+            ? project.client._id || project.client.id
+            : project.client,
         startDate: project.startDate,
         endDate: project.endDate,
         status: newStatus,
-        team: Array.isArray(project.team) 
-          ? project.team.map(member => 
-              typeof member === 'object' ? (member._id || member.id) : member
+        team: Array.isArray(project.team)
+          ? project.team.map((member) =>
+              typeof member === "object" ? member._id || member.id : member
             )
-          : []
+          : [],
       };
 
       await updateProject(projectId, updatedProject);
       await fetchProjects(); // Refresh projects to get updated data
-      toast.success('Project status updated successfully');
+      toast.success("Project status updated successfully");
     } catch (error) {
-      console.error('Error updating project status:', error);
-      toast.error(error.message || 'Failed to update project status');
+      console.error("Error updating project status:", error);
+      toast.error(error.message || "Failed to update project status");
     } finally {
       setIsUpdatingStatus(false);
     }
   };
 
   const getStatusBadgeColor = (status) => {
-    const statusOption = statusOptions.find(opt => opt.value === status);
+    const statusOption = statusOptions.find((opt) => opt.value === status);
     return {
-      bgColor: statusOption?.bgColor || 'bg-gray-100',
-      textColor: statusOption?.textColor || 'text-gray-800'
+      bgColor: statusOption?.bgColor || "bg-gray-100",
+      textColor: statusOption?.textColor || "text-gray-800",
     };
   };
 
@@ -266,10 +332,12 @@ const MyProjectKanban = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-base font-semibold text-gray-900">Error loading project</h2>
+        <h2 className="text-base font-semibold text-gray-900">
+          Error loading project
+        </h2>
         <p className="mt-2 text-sm text-gray-500">{error}</p>
         <button
-          onClick={() => navigate('/projects')}
+          onClick={() => navigate("/projects")}
           className="mt-4 text-sm text-primary-600 hover:text-primary-500"
         >
           Go back to projects
@@ -281,10 +349,15 @@ const MyProjectKanban = () => {
   if (!project) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-base font-semibold text-gray-900">Project not found</h2>
-        <p className="mt-2 text-sm text-gray-500">The project you're looking for doesn't exist or you don't have access to it.</p>
+        <h2 className="text-base font-semibold text-gray-900">
+          Project not found
+        </h2>
+        <p className="mt-2 text-sm text-gray-500">
+          The project you're looking for doesn't exist or you don't have access
+          to it.
+        </p>
         <button
-          onClick={() => navigate('/projects')}
+          onClick={() => navigate("/projects")}
           className="mt-4 text-sm text-primary-600 hover:text-primary-500"
         >
           Go back to projects
@@ -293,28 +366,41 @@ const MyProjectKanban = () => {
     );
   }
 
-  const todoTasks = Array.isArray(tasks) ? tasks.filter(task => task.status === 'todo') : [];
-  const inProgressTasks = Array.isArray(tasks) ? tasks.filter(task => task.status === 'in-progress') : [];
-  const onHoldTasks = Array.isArray(tasks) ? tasks.filter(task => task.status === 'on-hold') : [];
-  const doneTasks = Array.isArray(tasks) ? tasks.filter(task => task.status === 'done') : [];
+  const todoTasks = Array.isArray(tasks)
+    ? tasks.filter((task) => task.status === "todo")
+    : [];
+  const inProgressTasks = Array.isArray(tasks)
+    ? tasks.filter((task) => task.status === "in-progress")
+    : [];
+  const onHoldTasks = Array.isArray(tasks)
+    ? tasks.filter((task) => task.status === "on-hold")
+    : [];
+  const doneTasks = Array.isArray(tasks)
+    ? tasks.filter((task) => task.status === "done")
+    : [];
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 md:p-0">
         <div className="space-y-1 w-full md:w-auto">
-          <h1 className="text-xl md:text-2xl font-semibold text-gray-900">{project?.name}</h1>
+          <h1 className="text-xl md:text-2xl font-semibold text-gray-900">
+            {project?.name}
+          </h1>
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <p className="text-sm text-gray-500 line-clamp-2">
               {project?.description}
             </p>
             <div className="flex items-center space-x-2">
-              <label htmlFor="project-status" className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              <label
+                htmlFor="project-status"
+                className="text-sm font-medium text-gray-700 whitespace-nowrap"
+              >
                 Status:
               </label>
               <div className="relative">
                 <select
                   id="project-status"
-                  value={project?.status || 'planning'}
+                  value={project?.status || "planning"}
                   onChange={handleStatusChange}
                   disabled={isUpdatingStatus}
                   className={`text-sm rounded-full px-4 py-1.5 font-medium ${
@@ -323,9 +409,9 @@ const MyProjectKanban = () => {
                     getStatusBadgeColor(project?.status).textColor
                   } border-0 pr-8 appearance-none cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-primary-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {statusOptions.map(option => (
-                    <option 
-                      key={option.value} 
+                  {statusOptions.map((option) => (
+                    <option
+                      key={option.value}
                       value={option.value}
                       className={`${option.bgColor} ${option.textColor}`}
                     >
@@ -337,8 +423,18 @@ const MyProjectKanban = () => {
                   {isUpdatingStatus ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
                   ) : (
-                    <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <svg
+                      className="h-4 w-4 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   )}
                 </div>
@@ -394,4 +490,4 @@ const MyProjectKanban = () => {
   );
 };
 
-export default MyProjectKanban; 
+export default MyProjectKanban;

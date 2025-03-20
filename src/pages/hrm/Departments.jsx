@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useTable, useSortBy, usePagination } from 'react-table';
-import { toast } from 'react-hot-toast';
+import { useEffect, useState, useMemo } from "react";
+import { useTable, useSortBy, usePagination } from "react-table";
+import { toast } from "react-hot-toast";
 import {
   PlusIcon,
   PencilIcon,
@@ -9,17 +9,25 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-} from '@heroicons/react/24/outline';
-import useHrmStore from '../../store/hrm/useHrmStore';
-import * as hrmService from '../../services/hrm/hrmService';
-import DepartmentModal from '../../components/modules/hrm/DepartmentModal';
-import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
+} from "@heroicons/react/24/outline";
+import useHrmStore from "../../stores/useHrmStore";
+import DepartmentModal from "../../components/modules/hrm/DepartmentModal";
+import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 
 const Departments = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, department: null });
-  const { departments, departmentsLoading, departmentsError, fetchDepartments } = useHrmStore();
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    department: null,
+  });
+  const {
+    departments,
+    departmentsLoading,
+    departmentsError,
+    fetchDepartments,
+    deleteDepartment,
+  } = useHrmStore();
 
   useEffect(() => {
     fetchDepartments();
@@ -28,36 +36,39 @@ const Departments = () => {
   const columns = useMemo(
     () => [
       {
-        Header: 'Name',
-        accessor: 'name',
+        Header: "Name",
+        accessor: "name",
       },
       {
-        Header: 'Code',
-        accessor: 'code',
+        Header: "Code",
+        accessor: "code",
       },
       {
-        Header: 'Location',
-        accessor: 'location',
+        Header: "Location",
+        accessor: "location",
       },
       {
-        Header: 'Manager',
-        accessor: (row) => row.manager ? `${row.manager.firstName} ${row.manager.lastName}` : 'Not Assigned',
+        Header: "Manager",
+        accessor: (row) =>
+          row.manager
+            ? `${row.manager.firstName} ${row.manager.lastName}`
+            : "Not Assigned",
       },
       {
-        Header: 'Status',
-        accessor: 'isActive',
+        Header: "Status",
+        accessor: "isActive",
         Cell: ({ value }) => (
           <span
             className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-              value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              value ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
             }`}
           >
-            {value ? 'Active' : 'Inactive'}
+            {value ? "Active" : "Inactive"}
           </span>
         ),
       },
       {
-        Header: 'Actions',
+        Header: "Actions",
         Cell: ({ row }) => (
           <div className="flex space-x-2">
             <button
@@ -122,16 +133,17 @@ const Departments = () => {
   const handleDelete = async () => {
     try {
       const id = deleteModal.department.id || deleteModal.department._id;
-      await hrmService.deleteDepartment(id);
-      toast.success('Department deleted successfully');
+      await deleteDepartment(id);
+      toast.success("Department deleted successfully");
       fetchDepartments();
       setDeleteModal({ isOpen: false, department: null });
     } catch (error) {
-      console.error('Error deleting department:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to delete department';
+      console.error("Error deleting department:", error);
+      const errorMessage =
+        error.response?.data?.message || "Failed to delete department";
       toast.error(errorMessage);
       if (error.response?.status === 400) {
-        toast.error('Cannot delete department with active employees');
+        toast.error("Cannot delete department with active employees");
       }
     }
   };
@@ -170,14 +182,20 @@ const Departments = () => {
 
       <div className="overflow-x-auto">
         <div className="inline-block min-w-full align-middle">
-          <table className="min-w-full divide-y divide-gray-300" {...getTableProps()}>
+          <table
+            className="min-w-full divide-y divide-gray-300"
+            {...getTableProps()}
+          >
             <thead>
-              {headerGroups.map(headerGroup => {
-                const { key, ...headerGroupProps } = headerGroup.getHeaderGroupProps();
+              {headerGroups.map((headerGroup) => {
+                const { key, ...headerGroupProps } =
+                  headerGroup.getHeaderGroupProps();
                 return (
                   <tr key={key} {...headerGroupProps}>
-                    {headerGroup.headers.map(column => {
-                      const { key, ...columnProps } = column.getHeaderProps(column.getSortByToggleProps());
+                    {headerGroup.headers.map((column) => {
+                      const { key, ...columnProps } = column.getHeaderProps(
+                        column.getSortByToggleProps()
+                      );
                       return (
                         <th
                           key={key}
@@ -185,7 +203,7 @@ const Departments = () => {
                           className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                         >
                           <div className="group inline-flex">
-                            {column.render('Header')}
+                            {column.render("Header")}
                             <span className="ml-2 flex-none rounded">
                               {column.isSorted ? (
                                 column.isSortedDesc ? (
@@ -203,13 +221,16 @@ const Departments = () => {
                 );
               })}
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white" {...getTableBodyProps()}>
-              {page.map(row => {
+            <tbody
+              className="divide-y divide-gray-200 bg-white"
+              {...getTableBodyProps()}
+            >
+              {page.map((row) => {
                 prepareRow(row);
                 const { key, ...rowProps } = row.getRowProps();
                 return (
                   <tr key={key} {...rowProps}>
-                    {row.cells.map(cell => {
+                    {row.cells.map((cell) => {
                       const { key, ...cellProps } = cell.getCellProps();
                       return (
                         <td
@@ -217,7 +238,7 @@ const Departments = () => {
                           {...cellProps}
                           className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
                         >
-                          {cell.render('Cell')}
+                          {cell.render("Cell")}
                         </td>
                       );
                     })}
@@ -250,9 +271,8 @@ const Departments = () => {
         <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-gray-700">
-              Showing page{' '}
-              <span className="font-medium">{pageIndex + 1}</span> of{' '}
-              <span className="font-medium">{pageOptions.length}</span>
+              Showing page <span className="font-medium">{pageIndex + 1}</span>{" "}
+              of <span className="font-medium">{pageOptions.length}</span>
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -301,4 +321,4 @@ const Departments = () => {
   );
 };
 
-export default Departments; 
+export default Departments;

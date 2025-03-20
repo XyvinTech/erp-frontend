@@ -9,19 +9,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  server: {
-    port: 3001,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001/api/v1',
-        changeOrigin: true,
-        secure: false
-      }
-    },
-    hmr: {
-      overlay: false
-    }
-  },
+
   build: {
     outDir: 'dist',
     sourcemap: true

@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useProjectStore } from '@/stores/projectStore';
-import { XMarkIcon, UserGroupIcon } from '@heroicons/react/24/outline';
-import { toast } from 'react-hot-toast';
-import { employeeService } from '@/services/employee.service';
-
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useProjectStore } from "@/stores/projectStore";
+import { XMarkIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { toast } from "react-hot-toast";
+import useHrmStore from "@/stores/useHrmStore";
 const AssignProject = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { getProject, assignEmployees } = useProjectStore();
+    const { getProject, assignEmployees, getEmployees } = useProjectStore();
   const [project, setProject] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
@@ -20,46 +19,48 @@ const AssignProject = () => {
   useEffect(() => {
     const loadData = async () => {
       if (!id) {
-        toast.error('Project ID is missing');
-        navigate('/projects/list');
+        toast.error("Project ID is missing");
+        navigate("/projects/list");
         return;
       }
 
       try {
-        console.log('Starting data load...');
+        console.log("Starting data load...");
         const [projectData, employeesData] = await Promise.all([
           getProject(id),
-          employeeService.getEmployees()
+              getEmployees(),
         ]);
 
-        console.log('Project data loaded:', projectData);
-        console.log('Employees data loaded:', employeesData);
+        console.log("Project data loaded:", projectData);
+        console.log("Employees data loaded:", employeesData);
 
         if (!projectData) {
-          throw new Error('Project not found');
+          throw new Error("Project not found");
         }
 
         setProject(projectData);
-        
+
         if (Array.isArray(employeesData) && employeesData.length > 0) {
           setEmployees(employeesData);
-          
+
           // Set initially selected employees based on current team
           if (projectData.team && Array.isArray(projectData.team)) {
-            const currentTeamIds = projectData.team.map(member => member._id || member.id);
+            const currentTeamIds = projectData.team.map(
+              (member) => member._id || member.id
+            );
             setSelectedEmployees(currentTeamIds);
           } else {
             setSelectedEmployees([]);
           }
         } else {
-          console.warn('No employees found');
+          console.warn("No employees found");
           setEmployees([]);
           setSelectedEmployees([]);
         }
       } catch (error) {
-        console.error('Error loading data:', error);
-        toast.error(error.message || 'Failed to load data');
-        navigate('/projects/list');
+        console.error("Error loading data:", error);
+        toast.error(error.message || "Failed to load data");
+        navigate("/projects/list");
       } finally {
         setIsLoading(false);
       }
@@ -70,43 +71,43 @@ const AssignProject = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!id) {
-      toast.error('Project ID is missing');
+      toast.error("Project ID is missing");
       return;
     }
 
     if (selectedEmployees.length === 0) {
-      toast.warn('Please select at least one team member');
+      toast.warn("Please select at least one team member");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      console.log('Assigning employees:', selectedEmployees, 'to project:', id);
+      console.log("Assigning employees:", selectedEmployees, "to project:", id);
       const updatedProject = await assignEmployees(id, selectedEmployees);
-      console.log('Updated project after assignment:', updatedProject);
+      console.log("Updated project after assignment:", updatedProject);
       setProject(updatedProject);
-      toast.success('Team members assigned successfully');
+      toast.success("Team members assigned successfully");
       setShowModal(false);
     } catch (error) {
-      console.error('Error assigning employees:', error);
-      toast.error(error.message || 'Failed to assign team members');
+      console.error("Error assigning employees:", error);
+      toast.error(error.message || "Failed to assign team members");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const toggleEmployee = (employeeId) => {
-    setSelectedEmployees(prev =>
+    setSelectedEmployees((prev) =>
       prev.includes(employeeId)
-        ? prev.filter(id => id !== employeeId)
+        ? prev.filter((id) => id !== employeeId)
         : [...prev, employeeId]
     );
   };
 
   const handleSelectAll = () => {
-    const allEmployeeIds = employees.map(emp => emp._id || emp.id);
+    const allEmployeeIds = employees.map((emp) => emp._id || emp.id);
     setSelectedEmployees(allEmployeeIds);
   };
 
@@ -115,15 +116,15 @@ const AssignProject = () => {
   };
 
   const getPositionString = (position) => {
-    if (typeof position === 'string') return position;
-    if (typeof position === 'object' && position !== null) {
+    if (typeof position === "string") return position;
+    if (typeof position === "object" && position !== null) {
       if (position.title) return position.title;
-      if (position.id && typeof position.id === 'object') {
-        return position.id.title || 'No position specified';
+      if (position.id && typeof position.id === "object") {
+        return position.id.title || "No position specified";
       }
-      return position.name || 'No position specified';
+      return position.name || "No position specified";
     }
-    return 'No position specified';
+    return "No position specified";
   };
 
   if (isLoading) {
@@ -152,7 +153,9 @@ const AssignProject = () => {
 
         {/* Project Details Card */}
         <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Project Details</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Project Details
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-gray-500">Project Name</p>
@@ -161,19 +164,22 @@ const AssignProject = () => {
             <div>
               <p className="text-sm font-medium text-gray-500">Status</p>
               <p className="mt-1 text-sm text-gray-900">
-                {project?.status?.replace('_', ' ').toUpperCase()}
+                {project?.status?.replace("_", " ").toUpperCase()}
               </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Start Date</p>
               <p className="mt-1 text-sm text-gray-900">
-                {project?.startDate && new Date(project.startDate).toLocaleDateString()}
+                {project?.startDate &&
+                  new Date(project.startDate).toLocaleDateString()}
               </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">End Date</p>
               <p className="mt-1 text-sm text-gray-900">
-                {project?.endDate ? new Date(project.endDate).toLocaleDateString() : 'Ongoing'}
+                {project?.endDate
+                  ? new Date(project.endDate).toLocaleDateString()
+                  : "Ongoing"}
               </p>
             </div>
           </div>
@@ -181,7 +187,9 @@ const AssignProject = () => {
 
         {/* Current Team Members */}
         <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Current Team Members</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Current Team Members
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {project?.team?.length > 0 ? (
               project.team.map((member) => (
@@ -189,8 +197,12 @@ const AssignProject = () => {
                   key={member._id || member.id}
                   className="bg-gray-50 rounded-lg p-4"
                 >
-                  <h3 className="text-sm font-medium text-gray-900">{member.name || `${member.firstName} ${member.lastName}`}</h3>
-                  <p className="text-sm text-gray-500">{getPositionString(member.position)}</p>
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {member.name || `${member.firstName} ${member.lastName}`}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {getPositionString(member.position)}
+                  </p>
                   <p className="text-sm text-gray-500">{member.email}</p>
                 </div>
               ))
@@ -248,14 +260,15 @@ const AssignProject = () => {
                     {employees.length > 0 ? (
                       employees.map((employee) => {
                         const employeeId = employee._id || employee.id;
-                        const isAssigned = selectedEmployees.includes(employeeId);
+                        const isAssigned =
+                          selectedEmployees.includes(employeeId);
                         return (
                           <div
                             key={employeeId}
                             className={`relative flex items-start p-3 rounded-lg border ${
                               isAssigned
-                                ? 'border-primary-600 bg-primary-50'
-                                : 'border-gray-200'
+                                ? "border-primary-600 bg-primary-50"
+                                : "border-gray-200"
                             }`}
                           >
                             <div className="min-w-0 flex-1">
@@ -271,9 +284,16 @@ const AssignProject = () => {
                                   className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600 mr-3"
                                 />
                                 <div>
-                                  <p className="font-medium">{employee.name || `${employee.firstName} ${employee.lastName}`}</p>
-                                  <p className="text-sm text-gray-500">{getPositionString(employee.position)}</p>
-                                  <p className="text-sm text-gray-500">{employee.email}</p>
+                                  <p className="font-medium">
+                                    {employee.name ||
+                                      `${employee.firstName} ${employee.lastName}`}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    {getPositionString(employee.position)}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    {employee.email}
+                                  </p>
                                 </div>
                               </label>
                             </div>
@@ -293,7 +313,7 @@ const AssignProject = () => {
                       disabled={isSubmitting}
                       className="inline-flex w-full justify-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black sm:col-start-2"
                     >
-                      {isSubmitting ? 'Assigning...' : 'Assign Members'}
+                      {isSubmitting ? "Assigning..." : "Assign Members"}
                     </button>
                     <button
                       type="button"
@@ -313,4 +333,4 @@ const AssignProject = () => {
   );
 };
 
-export default AssignProject; 
+export default AssignProject;

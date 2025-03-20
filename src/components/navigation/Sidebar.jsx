@@ -1,7 +1,11 @@
-import { Fragment, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon, ChevronDownIcon, ChartBarIcon } from '@heroicons/react/24/outline';
-import { Link, useLocation } from 'react-router-dom';
+import { Fragment, useState } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import {
+  XMarkIcon,
+  ChevronDownIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/outline";
+import { Link, useLocation } from "react-router-dom";
 import {
   HomeIcon,
   UsersIcon,
@@ -16,124 +20,166 @@ import {
   FolderIcon,
   CurrencyDollarIcon,
   CreditCardIcon,
-} from '@heroicons/react/24/outline';
-import authService from '@/services/auth.service';
+} from "@heroicons/react/24/outline";
+import useAuthStore from "@/stores/auth.store";
 
 const frmNavigation = {
-  name: 'Financial Management',
+  name: "Financial Management",
   icon: BanknotesIcon,
   children: [
-    { name: 'Dashboard', href: '/frm/dashboard', icon: ChartBarIcon },
-    { name: 'Expenses', href: '/frm/expenses', icon: CurrencyDollarIcon },
-    { name: 'Personal Loans', href: '/frm/personal-loans', icon: CreditCardIcon },
-    { name: 'Office Loans', href: '/frm/office-loans', icon: BanknotesIcon },
-    { name: 'Revenue', href: '/frm/profits', icon: FolderIcon },
+    { name: "Dashboard", href: "/frm/dashboard", icon: ChartBarIcon },
+    { name: "Expenses", href: "/frm/expenses", icon: CurrencyDollarIcon },
+    {
+      name: "Personal Loans",
+      href: "/frm/personal-loans",
+      icon: CreditCardIcon,
+    },
+    { name: "Office Loans", href: "/frm/office-loans", icon: BanknotesIcon },
+    { name: "Revenue", href: "/frm/profits", icon: FolderIcon },
   ],
 };
 
 const baseNavigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+  { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
 ];
 
 const employeeNavigation = {
-  name: 'Employee',
+  name: "Employee",
   icon: UserCircleIcon,
   children: [
-    { name: 'Dashboard', href: '/employee/dashboard', icon: ChartBarIcon },
-    { name: 'Profile', href: '/employee/profile', icon: UserCircleIcon },
-    { name: 'Leave Application', href: '/employee/leaveapplication', icon: CalendarIcon },
-    { name: 'My Attendance', href: '/employee/myattendance', icon: ClockIcon },
-    { name: 'Pay Slip', href: '/employee/payslip', icon: DocumentTextIcon },
-    { name: 'My Projects', href: '/employee/projects', icon: FolderIcon },
+    { name: "Dashboard", href: "/employee/dashboard", icon: ChartBarIcon },
+    { name: "Profile", href: "/employee/profile", icon: UserCircleIcon },
+    {
+      name: "Leave Application",
+      href: "/employee/leaveapplication",
+      icon: CalendarIcon,
+    },
+    { name: "My Attendance", href: "/employee/myattendance", icon: ClockIcon },
+    { name: "Pay Slip", href: "/employee/payslip", icon: DocumentTextIcon },
+    { name: "My Projects", href: "/employee/projects", icon: FolderIcon },
   ],
 };
 
 const hrmNavigation = {
-  name: 'HRM',
+  name: "HRM",
   icon: UsersIcon,
   children: [
-    { name: 'Dashboard', href: '/hrm/dashboard', icon: ChartBarIcon },
-    { name: 'Employees', href: '/hrm/employees', icon: UsersIcon },
-    { name: 'Departments', href: '/hrm/departments', icon: BuildingOfficeIcon },
-    { name: 'Positions', href: '/hrm/positions', icon: BriefcaseIcon },
-    { name: 'Attendance', href: '/hrm/attendance', icon: ClockIcon },
-    { name: 'Leave', href: '/hrm/leave', icon: CalendarIcon },
-    { name: 'Payroll', href: '/hrm/payroll', icon: BanknotesIcon },
-    { name: 'Events', href: '/hrm/events', icon: CalendarIcon },
+    { name: "Dashboard", href: "/hrm/dashboard", icon: ChartBarIcon },
+    { name: "Employees", href: "/hrm/employees", icon: UsersIcon },
+    { name: "Departments", href: "/hrm/departments", icon: BuildingOfficeIcon },
+    { name: "Positions", href: "/hrm/positions", icon: BriefcaseIcon },
+    { name: "Attendance", href: "/hrm/attendance", icon: ClockIcon },
+    { name: "Leave", href: "/hrm/leave", icon: CalendarIcon },
+    { name: "Payroll", href: "/hrm/payroll", icon: BanknotesIcon },
+    { name: "Events", href: "/hrm/events", icon: CalendarIcon },
   ],
 };
 
 const clientsNavigation = {
-  name: 'Clients',
+  name: "Clients",
   icon: UserGroupIcon,
   children: [
-    { name: 'All Clients', href: '/clients/list', icon: UserGroupIcon },
+    { name: "All Clients", href: "/clients/list", icon: UserGroupIcon },
   ],
 };
 
 const projectsNavigation = {
-  name: 'Project Management',
+  name: "Project Management",
   icon: FolderIcon,
   children: [
-    { name: 'All Projects', href: '/projects/list', icon: FolderIcon },
-    { name: 'Project Details', href: '/projects/details', icon: DocumentTextIcon },
+    { name: "All Projects", href: "/projects/list", icon: FolderIcon },
+    {
+      name: "Project Details",
+      href: "/projects/details",
+      icon: DocumentTextIcon,
+    },
   ],
 };
 
 function classNames(...classes) {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 }
 
 const Sidebar = ({ open, setOpen }) => {
   const location = useLocation();
-  const currentUser = authService.getCurrentUser();
+  const { user } = useAuthStore();
   const [openMenu, setOpenMenu] = useState(null);
-  
-  console.log('Sidebar - Current user role:', currentUser?.roles?.map(role => role.name) || []);
-  
+
+  // Get user from localStorage as fallback if store is empty
+  const userFromStorage =
+    user ||
+    (localStorage.getItem("user")
+      ? JSON.parse(localStorage.getItem("user"))
+      : null);
+
+  // Use userFromStorage for roles
+  const userRoles = userFromStorage?.roles?.map((role) => role.name) || [];
+
+  console.log("Sidebar - Current user role:", userRoles);
+
   // Define role-based navigation permissions
   const navigationPermissions = {
-    'Employee': ['base', 'employee'],
-    'ERP System Administrator': ['base', 'employee', 'hrm', 'clients', 'projects', 'frm'],
-    'IT Manager': ['base', 'employee', 'projects'],
-    'Project Manager': ['base', 'employee', 'projects'],
-    'HR Manager': ['base', 'employee', 'hrm']
+    Employee: ["base", "employee"],
+    "ERP System Administrator": [
+      "base",
+      "employee",
+      "hrm",
+      "clients",
+      "projects",
+      "frm",
+    ],
+    "IT Manager": ["base", "employee", "projects"],
+    "Project Manager": ["base", "employee", "projects"],
+    "HR Manager": ["base", "employee", "hrm"],
   };
 
   // Get allowed navigation sections for current user
-  const allowedSections = navigationPermissions[currentUser?.roles?.map(role => role.name)[0]] || ['base', 'employee'];
-  
-  console.log('Sidebar - Allowed sections:', allowedSections);
-  
+  // Check all roles the user has, not just the first one
+  let allowedSections = ["base", "employee"]; // default
+
+  // Add sections from each role the user has
+  userRoles.forEach((role) => {
+    const roleSections = navigationPermissions[role] || [];
+    roleSections.forEach((section) => {
+      if (!allowedSections.includes(section)) {
+        allowedSections.push(section);
+      }
+    });
+  });
+
+  console.log("Sidebar - Allowed sections:", allowedSections);
+
   // Initialize navigation with base items if allowed
-  const navigation = allowedSections.includes('base') ? [...baseNavigation] : [];
-  
+  const navigation = allowedSections.includes("base")
+    ? [...baseNavigation]
+    : [];
+
   // Add employee navigation if allowed
-  if (allowedSections.includes('employee')) {
+  if (allowedSections.includes("employee")) {
     navigation.push(employeeNavigation);
   }
-  
+
   // Add HRM navigation if allowed
-  if (allowedSections.includes('hrm')) {
+  if (allowedSections.includes("hrm")) {
     navigation.push(hrmNavigation);
   }
-  
+
   // Add clients navigation if allowed
-  if (allowedSections.includes('clients')) {
+  if (allowedSections.includes("clients")) {
     navigation.push(clientsNavigation);
   }
-  
+
   // Add projects navigation if allowed
-  if (allowedSections.includes('projects')) {
+  if (allowedSections.includes("projects")) {
     navigation.push(projectsNavigation);
   }
-  
+
   // Add frm navigation if allowed
-  if (allowedSections.includes('frm')) {
+  if (allowedSections.includes("frm")) {
     navigation.push(frmNavigation);
   }
 
-  console.log('Sidebar - Final navigation:', navigation);
+  console.log("Sidebar - Final navigation:", navigation);
 
   const toggleMenu = (menuName) => {
     // If clicking the same menu, close it. Otherwise, open the new menu and close others
@@ -149,17 +195,17 @@ const Sidebar = ({ open, setOpen }) => {
           to={item.href}
           className={classNames(
             location.pathname === item.href
-              ? 'bg-gray-50 text-primary-600'
-              : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
-            'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+              ? "bg-gray-50 text-primary-600"
+              : "text-gray-700 hover:text-primary-600 hover:bg-gray-50",
+            "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
           )}
         >
           <item.icon
             className={classNames(
               location.pathname === item.href
-                ? 'text-primary-600'
-                : 'text-gray-400 group-hover:text-primary-600',
-              'h-6 w-6 shrink-0'
+                ? "text-primary-600"
+                : "text-gray-400 group-hover:text-primary-600",
+              "h-6 w-6 shrink-0"
             )}
             aria-hidden="true"
           />
@@ -173,15 +219,19 @@ const Sidebar = ({ open, setOpen }) => {
         <button
           onClick={() => toggleMenu(item.name)}
           className={classNames(
-            'w-full group flex items-center justify-between rounded-md p-2 text-sm font-semibold leading-6',
-            isExpanded ? 'text-primary-600 bg-gray-50' : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+            "w-full group flex items-center justify-between rounded-md p-2 text-sm font-semibold leading-6",
+            isExpanded
+              ? "text-primary-600 bg-gray-50"
+              : "text-gray-700 hover:text-primary-600 hover:bg-gray-50"
           )}
         >
           <div className="flex items-center gap-x-3">
             <item.icon
               className={classNames(
-                isExpanded ? 'text-primary-600' : 'text-gray-400 group-hover:text-primary-600',
-                'h-6 w-6 shrink-0'
+                isExpanded
+                  ? "text-primary-600"
+                  : "text-gray-400 group-hover:text-primary-600",
+                "h-6 w-6 shrink-0"
               )}
               aria-hidden="true"
             />
@@ -189,8 +239,8 @@ const Sidebar = ({ open, setOpen }) => {
           </div>
           <ChevronDownIcon
             className={classNames(
-              'h-5 w-5 shrink-0 transition-transform duration-200',
-              isExpanded ? 'transform rotate-180' : ''
+              "h-5 w-5 shrink-0 transition-transform duration-200",
+              isExpanded ? "transform rotate-180" : ""
             )}
           />
         </button>
@@ -210,17 +260,17 @@ const Sidebar = ({ open, setOpen }) => {
                   to={child.href}
                   className={classNames(
                     location.pathname === child.href
-                      ? 'bg-gray-50 text-primary-600'
-                      : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
-                    'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                      ? "bg-gray-50 text-primary-600"
+                      : "text-gray-700 hover:text-primary-600 hover:bg-gray-50",
+                    "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
                   )}
                 >
                   <child.icon
                     className={classNames(
                       location.pathname === child.href
-                        ? 'text-primary-600'
-                        : 'text-gray-400 group-hover:text-primary-600',
-                      'h-6 w-6 shrink-0'
+                        ? "text-primary-600"
+                        : "text-gray-400 group-hover:text-primary-600",
+                      "h-6 w-6 shrink-0"
                     )}
                     aria-hidden="true"
                   />
@@ -278,14 +328,21 @@ const Sidebar = ({ open, setOpen }) => {
                       onClick={() => setOpen(false)}
                     >
                       <span className="sr-only">Close sidebar</span>
-                      <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                      <XMarkIcon
+                        className="h-6 w-6 text-white"
+                        aria-hidden="true"
+                      />
                     </button>
                   </div>
                 </Transition.Child>
 
                 <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
                   <div className="flex h-16 shrink-0 items-center">
-                    <img className="h-8 w-auto" src="/logo.svg" alt="Your Company" />
+                    <img
+                      className="h-8 w-auto"
+                      src="/logo.svg"
+                      alt="Your Company"
+                    />
                   </div>
                   <nav className="flex flex-1 flex-col">
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">

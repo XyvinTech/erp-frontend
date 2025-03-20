@@ -1,43 +1,42 @@
-import { Fragment, useEffect, useMemo } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-hot-toast';
-import useHrmStore from '../../../store/hrm/useHrmStore';
-import * as hrmService from '../../../services/hrm/hrmService';
-import { Switch } from '@headlessui/react';
+import { Fragment, useEffect, useMemo } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { toast } from "react-hot-toast";
+import useHrmStore from "../../../stores/useHrmStore";
+import { Switch } from "@headlessui/react";
 
 const MANAGER_ROLES = [
-  'IT Manager',
-  'Project Manager',
-  'HR Manager',
-  'Finance Manager',
-  'Sales Manager'
+  "IT Manager",
+  "Project Manager",
+  "HR Manager",
+  "Finance Manager",
+  "Sales Manager",
 ];
 
 const validationSchema = Yup.object({
-  name: Yup.string().required('Department name is required'),
-  code: Yup.string().required('Department code is required'),
-  description: Yup.string().required('Description is required'),
-  location: Yup.string().required('Location is required'),
+  name: Yup.string().required("Department name is required"),
+  code: Yup.string().required("Department code is required"),
+  description: Yup.string().required("Description is required"),
+  location: Yup.string().required("Location is required"),
   budget: Yup.number()
-    .min(0, 'Budget cannot be negative')
-    .required('Budget is required'),
+    .min(0, "Budget cannot be negative")
+    .required("Budget is required"),
   manager: Yup.string(),
-  isActive: Yup.boolean()
+  isActive: Yup.boolean(),
 });
 
 const DepartmentModal = ({ department, onClose, onSuccess }) => {
-  const { employees, fetchEmployees } = useHrmStore();
+  const { employees, fetchEmployees, createDepartment, updateDepartment, getNextDepartmentCode } = useHrmStore();
 
   useEffect(() => {
     const loadEmployees = async () => {
       try {
         await fetchEmployees();
       } catch (error) {
-        console.error('Failed to fetch employees:', error);
-        toast.error('Failed to load employees');
+        console.error("Failed to fetch employees:", error);
+        toast.error("Failed to load employees");
       }
     };
 
@@ -47,32 +46,33 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
   // Filter employees to only show managers
   const managerEmployees = useMemo(() => {
     if (!Array.isArray(employees)) return [];
-    return employees.filter(emp => 
-      // Only show active employees with manager roles
-      (emp.status === 'active' || emp.isActive) &&
-      MANAGER_ROLES.includes(emp.role)
+    return employees.filter(
+      (emp) =>
+        // Only show active employees with manager roles
+        (emp.status === "active" || emp.isActive) &&
+        MANAGER_ROLES.includes(emp.role)
     );
   }, [employees]);
 
   const formik = useFormik({
     initialValues: {
-      name: department?.name || '',
-      code: department?.code || '',
-      description: department?.description || '',
-      location: department?.location || '',
-      budget: department?.budget || '',
-      manager: department?.manager?._id || department?.manager?.id || '',
-      isActive: department?.isActive ?? true
+      name: department?.name || "",
+      code: department?.code || "",
+      description: department?.description || "",
+      location: department?.location || "",
+      budget: department?.budget || "",
+      manager: department?.manager?._id || department?.manager?.id || "",
+      isActive: department?.isActive ?? true,
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
-        console.log('Submitting department form:', { department, values });
-        
+        console.log("Submitting department form:", { department, values });
+
         if (department?.id || department?._id) {
           const departmentId = department.id || department._id;
-          console.log('Updating department with ID:', departmentId);
-          
+          console.log("Updating department with ID:", departmentId);
+
           const updateData = {
             name: values.name,
             code: values.code,
@@ -80,32 +80,38 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
             location: values.location,
             budget: Number(values.budget),
             manager: values.manager || null,
-            isActive: values.isActive
+            isActive: values.isActive,
           };
-          
-          const updatedDepartment = await hrmService.updateDepartment(departmentId, updateData);
-          console.log('Department updated:', updatedDepartment);
-          toast.success('Department updated successfully');
+
+          const updatedDepartment = await updateDepartment(
+            departmentId,
+            updateData
+          );
+          console.log("Department updated:", updatedDepartment);
+          toast.success("Department updated successfully");
         } else {
-          console.log('Creating new department');
+          console.log("Creating new department");
           const createData = {
             ...values,
             budget: Number(values.budget),
-            manager: values.manager || null
+            manager: values.manager || null,
           };
-          
-          const newDepartment = await hrmService.createDepartment(createData);
-          console.log('Department created:', newDepartment);
-          toast.success('Department created successfully');
+
+          const newDepartment = await createDepartment(createData);
+          console.log("Department created:", newDepartment);
+          toast.success("Department created successfully");
         }
-        
-        if (typeof onSuccess === 'function') {
+
+        if (typeof onSuccess === "function") {
           onSuccess();
         }
         onClose();
       } catch (error) {
-        console.error('Department operation failed:', error);
-        const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';
+        console.error("Department operation failed:", error);
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
         toast.error(errorMessage);
       }
     },
@@ -114,19 +120,20 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
   // Add this useEffect to fetch and set the department code
   useEffect(() => {
     const fetchDepartmentCode = async () => {
-      if (!department) { // Only fetch new code when creating new department
+      if (!department) {
+        // Only fetch new code when creating new department
         try {
-          const response = await hrmService.getNextDepartmentCode();
+          const response = await getNextDepartmentCode();
           // Check the response structure and handle it appropriately
           const code = response?.data?.department?.code || response?.data?.code;
           if (code) {
-            formik.setFieldValue('code', code);
+            formik.setFieldValue("code", code);
           } else {
-            throw new Error('Invalid response format');
+            throw new Error("Invalid response format");
           }
         } catch (error) {
-          console.error('Error fetching department code:', error);
-          toast.error('Failed to generate department code');
+          console.error("Error fetching department code:", error);
+          toast.error("Failed to generate department code");
         }
       }
     };
@@ -178,10 +185,13 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
                       as="h3"
                       className="text-lg font-semibold leading-6 text-gray-900"
                     >
-                      {department ? 'Edit Department' : 'Add Department'}
+                      {department ? "Edit Department" : "Add Department"}
                     </Dialog.Title>
 
-                    <form onSubmit={formik.handleSubmit} className="mt-6 space-y-4">
+                    <form
+                      onSubmit={formik.handleSubmit}
+                      className="mt-6 space-y-4"
+                    >
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label htmlFor="name" className="label">
@@ -191,10 +201,12 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
                             type="text"
                             id="name"
                             className="input"
-                            {...formik.getFieldProps('name')}
+                            {...formik.getFieldProps("name")}
                           />
                           {formik.touched.name && formik.errors.name && (
-                            <div className="error-message">{formik.errors.name}</div>
+                            <div className="error-message">
+                              {formik.errors.name}
+                            </div>
                           )}
                         </div>
 
@@ -207,12 +219,14 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
                             id="code"
                             name="code"
                             className="input"
-                            {...formik.getFieldProps('code')}
+                            {...formik.getFieldProps("code")}
                             readOnly
                             disabled
                           />
                           {formik.touched.code && formik.errors.code && (
-                            <div className="error-message">{formik.errors.code}</div>
+                            <div className="error-message">
+                              {formik.errors.code}
+                            </div>
                           )}
                         </div>
 
@@ -224,11 +238,14 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
                             id="description"
                             rows={3}
                             className="input"
-                            {...formik.getFieldProps('description')}
+                            {...formik.getFieldProps("description")}
                           />
-                          {formik.touched.description && formik.errors.description && (
-                            <div className="error-message">{formik.errors.description}</div>
-                          )}
+                          {formik.touched.description &&
+                            formik.errors.description && (
+                              <div className="error-message">
+                                {formik.errors.description}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -239,11 +256,14 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
                             type="text"
                             id="location"
                             className="input"
-                            {...formik.getFieldProps('location')}
+                            {...formik.getFieldProps("location")}
                           />
-                          {formik.touched.location && formik.errors.location && (
-                            <div className="error-message">{formik.errors.location}</div>
-                          )}
+                          {formik.touched.location &&
+                            formik.errors.location && (
+                              <div className="error-message">
+                                {formik.errors.location}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -254,10 +274,12 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
                             type="number"
                             id="budget"
                             className="input"
-                            {...formik.getFieldProps('budget')}
+                            {...formik.getFieldProps("budget")}
                           />
                           {formik.touched.budget && formik.errors.budget && (
-                            <div className="error-message">{formik.errors.budget}</div>
+                            <div className="error-message">
+                              {formik.errors.budget}
+                            </div>
                           )}
                         </div>
 
@@ -268,25 +290,30 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
                           <select
                             id="manager"
                             className="input"
-                            {...formik.getFieldProps('manager')}
+                            {...formik.getFieldProps("manager")}
                           >
                             <option value="">Select Manager</option>
                             {managerEmployees.map((emp) => (
-                              <option 
-                                key={emp.id || emp._id} 
+                              <option
+                                key={emp.id || emp._id}
                                 value={emp.id || emp._id}
-                                title={`${emp.role} - ${emp.status || 'Active'}`}
+                                title={`${emp.role} - ${
+                                  emp.status || "Active"
+                                }`}
                               >
                                 {`${emp.firstName} ${emp.lastName} (${emp.role})`}
                               </option>
                             ))}
                           </select>
                           {formik.touched.manager && formik.errors.manager && (
-                            <div className="error-message">{formik.errors.manager}</div>
+                            <div className="error-message">
+                              {formik.errors.manager}
+                            </div>
                           )}
                           {managerEmployees.length === 0 && (
                             <div className="text-sm text-gray-500 mt-1">
-                              No managers available. Please assign manager roles to employees first.
+                              No managers available. Please assign manager roles
+                              to employees first.
                             </div>
                           )}
                         </div>
@@ -299,26 +326,33 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
                             <Switch
                               checked={formik.values.isActive}
                               onChange={(checked) => {
-                                formik.setFieldValue('isActive', checked);
+                                formik.setFieldValue("isActive", checked);
                               }}
                               className={`${
-                                formik.values.isActive ? 'bg-black' : 'bg-gray-200'
+                                formik.values.isActive
+                                  ? "bg-black"
+                                  : "bg-gray-200"
                               } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2`}
                             >
                               <span className="sr-only">Enable status</span>
                               <span
                                 className={`${
-                                  formik.values.isActive ? 'translate-x-6' : 'translate-x-1'
+                                  formik.values.isActive
+                                    ? "translate-x-6"
+                                    : "translate-x-1"
                                 } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
                               />
                             </Switch>
                             <span className="text-sm text-gray-600">
-                              {formik.values.isActive ? 'Active' : 'Inactive'}
+                              {formik.values.isActive ? "Active" : "Inactive"}
                             </span>
                           </div>
-                          {formik.touched.isActive && formik.errors.isActive && (
-                            <div className="error-message">{formik.errors.isActive}</div>
-                          )}
+                          {formik.touched.isActive &&
+                            formik.errors.isActive && (
+                              <div className="error-message">
+                                {formik.errors.isActive}
+                              </div>
+                            )}
                         </div>
                       </div>
 
@@ -327,15 +361,17 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
                           type="submit"
                           disabled={formik.isSubmitting}
                           className={`inline-flex w-full justify-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 sm:ml-3 sm:w-auto ${
-                            formik.isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                            formik.isSubmitting
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
                           }`}
                         >
                           {formik.isSubmitting ? (
                             <div className="spinner border-2 h-5 w-5" />
                           ) : department ? (
-                            'Update'
+                            "Update"
                           ) : (
-                            'Create'
+                            "Create"
                           )}
                         </button>
                         <button
@@ -358,4 +394,4 @@ const DepartmentModal = ({ department, onClose, onSuccess }) => {
   );
 };
 
-export default DepartmentModal; 
+export default DepartmentModal;

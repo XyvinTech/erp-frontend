@@ -1,19 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Button } from '@/components/ui/button';
-import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
-import { toast } from 'react-hot-toast';
-import ApiService from '@/services/api.service';
+import React, { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { toast } from "react-hot-toast";
+import useHrmStore from "@/stores/useHrmStore";
 import {
-  ClockIcon, CheckCircleIcon, XCircleIcon, CalendarIcon,
-  ChevronLeftIcon, ChevronRightIcon, DownloadIcon,
-  MoonIcon, SunIcon, BedIcon, CoffeeIcon, BriefcaseIcon,
-  UserIcon, HeartIcon, TimerIcon, BellIcon
-} from 'lucide-react';
-import { ArrowRightOnRectangleIcon, CalendarDaysIcon, PaperAirplaneIcon, XMarkIcon } from '@heroicons/react/24/outline';
-
-const attendanceService = new ApiService('/hrm');
+  ClockIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  DownloadIcon,
+  MoonIcon,
+  SunIcon,
+  BedIcon,
+  CoffeeIcon,
+  BriefcaseIcon,
+  UserIcon,
+  HeartIcon,
+  TimerIcon,
+  BellIcon,
+} from "lucide-react";
+import {
+  ArrowRightOnRectangleIcon,
+  CalendarDaysIcon,
+  PaperAirplaneIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 
 const StatsCard = ({ icon: Icon, title, value, color }) => (
   <div className="bg-white rounded-lg p-3 shadow-sm border">
@@ -48,35 +63,40 @@ const MyAttendance = () => {
     onLeave: 0,
     holiday: 0,
     dayOff: 0,
-    totalWorkHours: 0
+    totalWorkHours: 0,
   });
 
   const fetchAttendanceData = async () => {
     try {
       setLoading(true);
-      const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-      const endDate = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
-      
-      const response = await attendanceService.get('/attendance/my-attendance', { startDate, endDate });
+      const startDate = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+      const endDate = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+      const { getMyAttendance } = useHrmStore();
+      const response = await getMyAttendance(startDate, endDate);
       const { attendance, monthlyStats } = response.data;
-      
+
       setMonthlyAttendance(attendance);
       setStats({
         total: attendance.length,
         present: monthlyStats.present || 0,
         absent: monthlyStats.absent || 0,
         late: monthlyStats.late || 0,
-        halfDay: attendance.filter(a => a.status === 'Half-Day').length,
-        earlyLeave: attendance.filter(a => a.status === 'Early-Leave').length,
-        onLeave: attendance.filter(a => a.status === 'On-Leave').length,
-        holiday: attendance.filter(a => a.status === 'Holiday').length,
-        dayOff: attendance.filter(a => a.status === 'Day-Off').length,
-        totalWorkHours: attendance.reduce((sum, record) => sum + (record.workHours || 0), 0)
+        halfDay: attendance.filter((a) => a.status === "Half-Day").length,
+        earlyLeave: attendance.filter((a) => a.status === "Early-Leave").length,
+        onLeave: attendance.filter((a) => a.status === "On-Leave").length,
+        holiday: attendance.filter((a) => a.status === "Holiday").length,
+        dayOff: attendance.filter((a) => a.status === "Day-Off").length,
+        totalWorkHours: attendance.reduce(
+          (sum, record) => sum + (record.workHours || 0),
+          0
+        ),
       });
 
       setCurrentPage(1);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch attendance data');
+      toast.error(
+        error.response?.data?.message || "Failed to fetch attendance data"
+      );
     } finally {
       setLoading(false);
     }
@@ -90,21 +110,25 @@ const MyAttendance = () => {
   // Update selected day attendance
   useEffect(() => {
     const dayAttendance = monthlyAttendance.find(
-      record => format(parseISO(record.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
+      (record) =>
+        format(parseISO(record.date), "yyyy-MM-dd") ===
+        format(selectedDate, "yyyy-MM-dd")
     );
     setSelectedDayAttendance(dayAttendance);
   }, [selectedDate, monthlyAttendance]);
 
   const handleDownload = () => {
     const monthAttendanceData = {
-      month: format(currentMonth, 'MMMM yyyy'),
-      attendance: monthlyAttendance
+      month: format(currentMonth, "MMMM yyyy"),
+      attendance: monthlyAttendance,
     };
-    const blob = new Blob([JSON.stringify(monthAttendanceData, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(monthAttendanceData, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `attendance-${format(currentMonth, 'yyyy-MM')}.json`;
+    a.download = `attendance-${format(currentMonth, "yyyy-MM")}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -120,73 +144,70 @@ const MyAttendance = () => {
   const statsCards = [
     {
       icon: SunIcon,
-      title: 'Present',
+      title: "Present",
       value: stats.present,
-      color: 'bg-green-100 text-green-500',
+      color: "bg-green-100 text-green-500",
     },
     {
       icon: XMarkIcon,
-      title: 'Absent',
+      title: "Absent",
       value: stats.absent,
-      color: 'bg-red-100 text-red-500',
+      color: "bg-red-100 text-red-500",
     },
     {
       icon: ClockIcon,
-      title: 'Late',
+      title: "Late",
       value: stats.late,
-      color: 'bg-yellow-100 text-yellow-500',
+      color: "bg-yellow-100 text-yellow-500",
     },
     {
       icon: ArrowRightOnRectangleIcon,
-      title: 'Early-Leave',
+      title: "Early-Leave",
       value: stats.earlyLeave,
-      color: 'bg-orange-100 text-orange-500',
+      color: "bg-orange-100 text-orange-500",
     },
     {
       icon: CalendarDaysIcon,
-      title: 'Half-Day',
+      title: "Half-Day",
       value: stats.halfDay,
-      color: 'bg-blue-100 text-blue-500',
+      color: "bg-blue-100 text-blue-500",
     },
     {
       icon: PaperAirplaneIcon,
-      title: 'On-Leave',
+      title: "On-Leave",
       value: stats.onLeave,
-      color: 'bg-purple-100 text-purple-500',
+      color: "bg-purple-100 text-purple-500",
     },
     {
       icon: CalendarDaysIcon,
-      title: 'Holiday',
+      title: "Holiday",
       value: stats.holiday,
-      color: 'bg-pink-100 text-pink-500',
+      color: "bg-pink-100 text-pink-500",
     },
     {
       icon: MoonIcon,
-      title: 'Day-Off',
+      title: "Day-Off",
       value: stats.dayOff,
-      color: 'bg-gray-100 text-gray-500',
+      color: "bg-gray-100 text-gray-500",
     },
     {
       icon: TimerIcon,
-      title: 'Work Hours',
+      title: "Work Hours",
       value: `${Math.round(stats.totalWorkHours)}h`,
-      color: 'bg-blue-100 text-blue-500',
-    }
+      color: "bg-blue-100 text-blue-500",
+    },
   ];
 
   return (
     <div className="container max-w-7xl mx-auto p-2 sm:p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold">My Attendance</h1>
-        <Button 
-          onClick={handleDownload}
-          className="flex items-center gap-2"
-        >
+        <Button onClick={handleDownload} className="flex items-center gap-2">
           <DownloadIcon className="h-4 w-4" />
           <span className="hidden sm:inline">Download Monthly Report</span>
         </Button>
       </div>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
         {statsCards.map((card, index) => (
           <StatsCard key={index} {...card} />
@@ -199,24 +220,32 @@ const MyAttendance = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1))}
+              onClick={() =>
+                setCurrentMonth(
+                  (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1)
+                )
+              }
               className="h-6 w-6"
             >
               <ChevronLeftIcon className="h-3 w-3" />
             </Button>
             <span className="text-xs sm:text-sm font-medium">
-              {format(currentMonth, 'MMMM yyyy')}
+              {format(currentMonth, "MMMM yyyy")}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1))}
+              onClick={() =>
+                setCurrentMonth(
+                  (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1)
+                )
+              }
               className="h-6 w-6"
             >
               <ChevronRightIcon className="h-3 w-3" />
             </Button>
           </div>
-          
+
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -234,11 +263,13 @@ const MyAttendance = () => {
               row: "flex w-full mt-1",
               cell: "text-center text-[0.6rem] p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
               day: "h-6 w-6 p-0 font-normal aria-selected:opacity-100",
-              day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+              day_selected:
+                "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
               day_today: "bg-accent text-accent-foreground",
               day_outside: "text-muted-foreground opacity-50",
               day_disabled: "text-muted-foreground opacity-50",
-              day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+              day_range_middle:
+                "aria-selected:bg-accent aria-selected:text-accent-foreground",
               day_hidden: "invisible",
             }}
           />
@@ -246,35 +277,51 @@ const MyAttendance = () => {
 
         <Card className="lg:col-span-2 p-2 sm:p-4">
           <h2 className="text-base sm:text-lg font-medium mb-4">
-            Attendance Details - {format(selectedDate, 'MMMM d, yyyy')}
+            Attendance Details - {format(selectedDate, "MMMM d, yyyy")}
           </h2>
           {selectedDayAttendance ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 p-2 sm:p-4 border rounded-lg">
               <div>
                 <p className="text-xs sm:text-sm text-gray-500">Check In</p>
                 <p className="text-sm sm:text-base font-medium">
-                  {selectedDayAttendance.checkIn?.time ? format(parseISO(selectedDayAttendance.checkIn.time), 'hh:mm a') : '-'}
+                  {selectedDayAttendance.checkIn?.time
+                    ? format(
+                        parseISO(selectedDayAttendance.checkIn.time),
+                        "hh:mm a"
+                      )
+                    : "-"}
                 </p>
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-gray-500">Check Out</p>
                 <p className="text-sm sm:text-base font-medium">
-                  {selectedDayAttendance.checkOut?.time ? format(parseISO(selectedDayAttendance.checkOut.time), 'hh:mm a') : '-'}
+                  {selectedDayAttendance.checkOut?.time
+                    ? format(
+                        parseISO(selectedDayAttendance.checkOut.time),
+                        "hh:mm a"
+                      )
+                    : "-"}
                 </p>
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-gray-500">Total Hours</p>
                 <p className="text-sm sm:text-base font-medium">
-                  {selectedDayAttendance.workHours ? `${selectedDayAttendance.workHours}h` : '-'}
+                  {selectedDayAttendance.workHours
+                    ? `${selectedDayAttendance.workHours}h`
+                    : "-"}
                 </p>
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-gray-500">Status</p>
-                <p className="text-sm sm:text-base font-medium">{selectedDayAttendance.status}</p>
+                <p className="text-sm sm:text-base font-medium">
+                  {selectedDayAttendance.status}
+                </p>
               </div>
             </div>
           ) : (
-            <div className="text-center text-gray-500">No attendance record for this date</div>
+            <div className="text-center text-gray-500">
+              No attendance record for this date
+            </div>
           )}
         </Card>
       </div>
@@ -295,33 +342,49 @@ const MyAttendance = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="text-center p-4">Loading...</td>
+                  <td colSpan="5" className="text-center p-4">
+                    Loading...
+                  </td>
                 </tr>
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((record, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="p-2">{format(parseISO(record.date), 'MMM dd, yyyy')}</td>
-                    <td className="p-2">{record.checkIn?.time ? format(parseISO(record.checkIn.time), 'hh:mm a') : '-'}</td>
-                    <td className="p-2">{record.checkOut?.time ? format(parseISO(record.checkOut.time), 'hh:mm a') : '-'}</td>
-                    <td className="p-2">{record.workHours ? `${record.workHours}h` : '-'}</td>
+                    <td className="p-2">
+                      {format(parseISO(record.date), "MMM dd, yyyy")}
+                    </td>
+                    <td className="p-2">
+                      {record.checkIn?.time
+                        ? format(parseISO(record.checkIn.time), "hh:mm a")
+                        : "-"}
+                    </td>
+                    <td className="p-2">
+                      {record.checkOut?.time
+                        ? format(parseISO(record.checkOut.time), "hh:mm a")
+                        : "-"}
+                    </td>
+                    <td className="p-2">
+                      {record.workHours ? `${record.workHours}h` : "-"}
+                    </td>
                     <td className="p-2">{record.status}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-center p-4">No attendance records found</td>
+                  <td colSpan="5" className="text-center p-4">
+                    No attendance records found
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-        
+
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 mt-4">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
             >
               Previous
@@ -332,7 +395,9 @@ const MyAttendance = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+              }
               disabled={currentPage === totalPages}
             >
               Next

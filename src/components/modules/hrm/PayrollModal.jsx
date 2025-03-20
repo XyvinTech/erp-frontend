@@ -1,25 +1,27 @@
-import { Fragment, useEffect, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-hot-toast';
-import useHrmStore from '../../../store/hrm/useHrmStore';
-import * as hrmService from '../../../services/hrm/hrmService';
+import { Fragment, useEffect, useState } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { toast } from "react-hot-toast";
+import useHrmStore from "../../../stores/useHrmStore";
+import * as hrmService from "../../../api/hrm.service";
 
 const validationSchema = Yup.object({
-  employee: Yup.string().required('Employee is required'),
-  period: Yup.date().required('Period is required'),
-  basicSalary: Yup.number().required('Basic salary is required').min(0, 'Basic salary cannot be negative'),
+  employee: Yup.string().required("Employee is required"),
+  period: Yup.date().required("Period is required"),
+  basicSalary: Yup.number()
+    .required("Basic salary is required")
+    .min(0, "Basic salary cannot be negative"),
   allowances: Yup.object().shape({
-    mobile: Yup.number().min(0, 'Mobile allowance cannot be negative'),
-    transport: Yup.number().min(0, 'Transport allowance cannot be negative'),
-    bonus: Yup.number().min(0, 'Bonus cannot be negative'),
-    other: Yup.number().min(0, 'Other allowances cannot be negative'),
+    mobile: Yup.number().min(0, "Mobile allowance cannot be negative"),
+    transport: Yup.number().min(0, "Transport allowance cannot be negative"),
+    bonus: Yup.number().min(0, "Bonus cannot be negative"),
+    other: Yup.number().min(0, "Other allowances cannot be negative"),
   }),
   deductions: Yup.object().shape({
-    pf: Yup.number().min(0, 'PF cannot be negative'),
-    other: Yup.number().min(0, 'Other deductions cannot be negative'),
+    pf: Yup.number().min(0, "PF cannot be negative"),
+    other: Yup.number().min(0, "Other deductions cannot be negative"),
   }),
 });
 
@@ -40,8 +42,8 @@ const PayrollModal = ({ payroll, onClose, onSuccess }) => {
 
   const formik = useFormik({
     initialValues: {
-      employee: payroll?.employee?._id || '',
-      period: payroll?.period || new Date().toISOString().split('T')[0],
+      employee: payroll?.employee?._id || "",
+      period: payroll?.period || new Date().toISOString().split("T")[0],
       basicSalary: payroll?.basicSalary || 0,
       allowances: {
         mobile: payroll?.allowances?.mobile || 0,
@@ -59,42 +61,48 @@ const PayrollModal = ({ payroll, onClose, onSuccess }) => {
       try {
         if (payroll?._id) {
           await hrmService.updatePayroll(payroll._id, values);
-          toast.success('Payroll updated successfully');
+          toast.success("Payroll updated successfully");
         } else {
           await hrmService.createPayroll(values);
-          toast.success('Payroll created successfully');
+          toast.success("Payroll created successfully");
         }
         onSuccess();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Something went wrong');
+        toast.error(error.response?.data?.message || "Something went wrong");
       }
     },
   });
 
   const handleEmployeeChange = async (employeeId) => {
     try {
-      formik.setFieldValue('employee', employeeId);
-      
+      formik.setFieldValue("employee", employeeId);
+
       if (employeeId) {
         // Find the selected employee from the employees list
-        const employee = employees.find(emp => emp.id === employeeId);
+        const employee = employees.find((emp) => emp.id === employeeId);
         if (employee) {
           setSelectedEmployee(employee);
-          formik.setFieldValue('basicSalary', employee.salary);
+          formik.setFieldValue("basicSalary", employee.salary);
         }
       } else {
         setSelectedEmployee(null);
-        formik.setFieldValue('basicSalary', 0);
+        formik.setFieldValue("basicSalary", 0);
       }
     } catch (error) {
-      toast.error('Error setting employee salary');
+      toast.error("Error setting employee salary");
     }
   };
 
   const calculateTotal = () => {
     const basicSalary = Number(formik.values.basicSalary) || 0;
-    const allowances = Object.values(formik.values.allowances).reduce((sum, value) => sum + Number(value), 0);
-    const deductions = Object.values(formik.values.deductions).reduce((sum, value) => sum + Number(value), 0);
+    const allowances = Object.values(formik.values.allowances).reduce(
+      (sum, value) => sum + Number(value),
+      0
+    );
+    const deductions = Object.values(formik.values.deductions).reduce(
+      (sum, value) => sum + Number(value),
+      0
+    );
     return basicSalary + allowances - deductions;
   };
 
@@ -142,142 +150,189 @@ const PayrollModal = ({ payroll, onClose, onSuccess }) => {
                       as="h3"
                       className="text-lg font-semibold leading-6 text-gray-900"
                     >
-                      {payroll ? 'Edit Payroll' : 'Generate Payroll'}
+                      {payroll ? "Edit Payroll" : "Generate Payroll"}
                     </Dialog.Title>
 
-                    <form onSubmit={formik.handleSubmit} className="mt-6 space-y-4">
+                    <form
+                      onSubmit={formik.handleSubmit}
+                      className="mt-6 space-y-4"
+                    >
                       <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
-                          <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="employee"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Employee
                           </label>
                           <select
                             id="employee"
                             name="employee"
                             className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                            onChange={(e) => handleEmployeeChange(e.target.value)}
+                            onChange={(e) =>
+                              handleEmployeeChange(e.target.value)
+                            }
                             value={formik.values.employee}
                           >
                             <option value="">Select Employee</option>
                             {employees.map((emp) => (
                               <option key={emp.id} value={emp.id}>
-                                {emp.firstName} {emp.lastName} - {emp.position?.title}
+                                {emp.firstName} {emp.lastName} -{" "}
+                                {emp.position?.title}
                               </option>
                             ))}
                           </select>
-                          {formik.touched.employee && formik.errors.employee && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.employee}</p>
-                          )}
+                          {formik.touched.employee &&
+                            formik.errors.employee && (
+                              <p className="mt-1 text-sm text-red-600">
+                                {formik.errors.employee}
+                              </p>
+                            )}
                         </div>
 
                         <div>
-                          <label htmlFor="period" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="period"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Period
                           </label>
                           <input
                             type="month"
                             id="period"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            {...formik.getFieldProps('period')}
+                            {...formik.getFieldProps("period")}
                           />
                           {formik.touched.period && formik.errors.period && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.period}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {formik.errors.period}
+                            </p>
                           )}
                         </div>
 
                         <div>
-                          <label htmlFor="basicSalary" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="basicSalary"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Basic Salary
                           </label>
                           <input
                             type="number"
                             id="basicSalary"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            {...formik.getFieldProps('basicSalary')}
+                            {...formik.getFieldProps("basicSalary")}
                             readOnly
                           />
-                          {formik.touched.basicSalary && formik.errors.basicSalary && (
-                            <p className="mt-1 text-sm text-red-600">{formik.errors.basicSalary}</p>
-                          )}
+                          {formik.touched.basicSalary &&
+                            formik.errors.basicSalary && (
+                              <p className="mt-1 text-sm text-red-600">
+                                {formik.errors.basicSalary}
+                              </p>
+                            )}
                         </div>
 
                         <div className="col-span-2">
-                          <h4 className="text-sm font-medium text-gray-900">Allowances</h4>
+                          <h4 className="text-sm font-medium text-gray-900">
+                            Allowances
+                          </h4>
                           <div className="mt-2 grid grid-cols-2 gap-4">
                             <div>
-                              <label htmlFor="allowances.mobile" className="block text-sm font-medium text-gray-700">
+                              <label
+                                htmlFor="allowances.mobile"
+                                className="block text-sm font-medium text-gray-700"
+                              >
                                 Mobile
                               </label>
                               <input
                                 type="number"
                                 id="allowances.mobile"
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                {...formik.getFieldProps('allowances.mobile')}
+                                {...formik.getFieldProps("allowances.mobile")}
                               />
                             </div>
 
                             <div>
-                              <label htmlFor="allowances.transport" className="block text-sm font-medium text-gray-700">
+                              <label
+                                htmlFor="allowances.transport"
+                                className="block text-sm font-medium text-gray-700"
+                              >
                                 Transport
                               </label>
                               <input
                                 type="number"
                                 id="allowances.transport"
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                {...formik.getFieldProps('allowances.transport')}
+                                {...formik.getFieldProps(
+                                  "allowances.transport"
+                                )}
                               />
                             </div>
 
                             <div>
-                              <label htmlFor="allowances.bonus" className="block text-sm font-medium text-gray-700">
+                              <label
+                                htmlFor="allowances.bonus"
+                                className="block text-sm font-medium text-gray-700"
+                              >
                                 Bonus
                               </label>
                               <input
                                 type="number"
                                 id="allowances.bonus"
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                {...formik.getFieldProps('allowances.bonus')}
+                                {...formik.getFieldProps("allowances.bonus")}
                               />
                             </div>
 
                             <div>
-                              <label htmlFor="allowances.other" className="block text-sm font-medium text-gray-700">
+                              <label
+                                htmlFor="allowances.other"
+                                className="block text-sm font-medium text-gray-700"
+                              >
                                 Other
                               </label>
                               <input
                                 type="number"
                                 id="allowances.other"
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                {...formik.getFieldProps('allowances.other')}
+                                {...formik.getFieldProps("allowances.other")}
                               />
                             </div>
                           </div>
                         </div>
 
                         <div className="col-span-2">
-                          <h4 className="text-sm font-medium text-gray-900">Deductions</h4>
+                          <h4 className="text-sm font-medium text-gray-900">
+                            Deductions
+                          </h4>
                           <div className="mt-2 grid grid-cols-2 gap-4">
                             <div>
-                              <label htmlFor="deductions.pf" className="block text-sm font-medium text-gray-700">
+                              <label
+                                htmlFor="deductions.pf"
+                                className="block text-sm font-medium text-gray-700"
+                              >
                                 Provident Fund (PF)
                               </label>
                               <input
                                 type="number"
                                 id="deductions.pf"
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                {...formik.getFieldProps('deductions.pf')}
+                                {...formik.getFieldProps("deductions.pf")}
                               />
                             </div>
 
                             <div>
-                              <label htmlFor="deductions.other" className="block text-sm font-medium text-gray-700">
+                              <label
+                                htmlFor="deductions.other"
+                                className="block text-sm font-medium text-gray-700"
+                              >
                                 Other
                               </label>
                               <input
                                 type="number"
                                 id="deductions.other"
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                {...formik.getFieldProps('deductions.other')}
+                                {...formik.getFieldProps("deductions.other")}
                               />
                             </div>
                           </div>
@@ -285,7 +340,9 @@ const PayrollModal = ({ payroll, onClose, onSuccess }) => {
 
                         <div className="col-span-2 mt-4 border-t border-gray-200 pt-4">
                           <div className="flex justify-between">
-                            <span className="text-base font-medium text-gray-900">Total Net Salary</span>
+                            <span className="text-base font-medium text-gray-900">
+                              Total Net Salary
+                            </span>
                             <span className="text-base font-medium text-gray-900">
                               ${calculateTotal().toLocaleString()}
                             </span>
@@ -305,7 +362,7 @@ const PayrollModal = ({ payroll, onClose, onSuccess }) => {
                           type="submit"
                           className="inline-flex justify-center rounded-md border border-transparent bg-black px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
                         >
-                          {payroll ? 'Update' : 'Generate'} Payroll
+                          {payroll ? "Update" : "Generate"} Payroll
                         </button>
                       </div>
                     </form>
@@ -320,4 +377,4 @@ const PayrollModal = ({ payroll, onClose, onSuccess }) => {
   );
 };
 
-export default PayrollModal; 
+export default PayrollModal;

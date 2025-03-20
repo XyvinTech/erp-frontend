@@ -1,9 +1,9 @@
-import { Fragment, useEffect, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useForm } from 'react-hook-form';
-import frmService from '@/services/frmService';
-import { toast } from 'react-hot-toast';
+import { Fragment, useEffect, useState } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useForm } from "react-hook-form";
+import frmService from "@/api/frmService";
+import { toast } from "react-hot-toast";
 
 const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
   const {
@@ -11,17 +11,17 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
     handleSubmit,
     reset,
     setValue,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      description: '',
-      amount: '',
-      date: new Date().toISOString().split('T')[0],
-      category: '',
-      notes: '',
+      description: "",
+      amount: "",
+      date: new Date().toISOString().split("T")[0],
+      category: "",
+      notes: "",
       documents: [],
-      status: 'Pending'
-    }
+      status: "Pending",
+    },
   });
 
   const [canUpdateStatus, setCanUpdateStatus] = useState(false);
@@ -29,32 +29,32 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
   useEffect(() => {
     if (open) {
       if (initialData) {
-        Object.keys(initialData).forEach(key => {
-          if (key !== 'documents') {
+        Object.keys(initialData).forEach((key) => {
+          if (key !== "documents") {
             setValue(key, initialData[key]);
           }
         });
       } else {
         reset({
-          description: '',
-          amount: '',
-          date: new Date().toISOString().split('T')[0],
-          category: '',
-          notes: '',
+          description: "",
+          amount: "",
+          date: new Date().toISOString().split("T")[0],
+          category: "",
+          notes: "",
           documents: [],
-          status: 'Pending'
+          status: "Pending",
         });
 
         const fetchNextExpenseNumber = async () => {
           try {
             const response = await frmService.getNextExpenseNumber();
             if (response.success && response.data?.expense?.expenseNumber) {
-              setValue('expenseNumber', response.data.expense.expenseNumber);
+              setValue("expenseNumber", response.data.expense.expenseNumber);
             } else {
-              toast.error('Failed to get expense number.');
+              toast.error("Failed to get expense number.");
             }
           } catch (error) {
-            toast.error(error.message || 'Failed to get expense number.');
+            toast.error(error.message || "Failed to get expense number.");
             setOpen(false);
           }
         };
@@ -63,10 +63,10 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
     }
 
     // Check user permissions when component mounts
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem("user"));
     setCanUpdateStatus(
-      user?.permissions?.includes('UPDATE_EXPENSE_STATUS') || 
-      user?.role === 'admin'
+      user?.permissions?.includes("UPDATE_EXPENSE_STATUS") ||
+        user?.role === "admin"
     );
   }, [open, initialData, setValue, reset, setOpen]);
 
@@ -74,13 +74,16 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
     try {
       const formData = {
         ...data,
-        documents: data.documents instanceof FileList ? Array.from(data.documents) : data.documents
+        documents:
+          data.documents instanceof FileList
+            ? Array.from(data.documents)
+            : data.documents,
       };
-      
+
       await onSubmit(formData);
       reset();
     } catch (error) {
-      console.error('Form submission error:', error);
+      console.error("Form submission error:", error);
     }
   };
 
@@ -124,20 +127,29 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
 
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                    <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                      {initialData ? 'Edit Expense' : 'Add New Expense'}
+                    <Dialog.Title
+                      as="h3"
+                      className="text-lg font-semibold leading-6 text-gray-900"
+                    >
+                      {initialData ? "Edit Expense" : "Add New Expense"}
                     </Dialog.Title>
 
-                    <form onSubmit={handleSubmit(handleFormSubmit)} className="mt-6 space-y-6">
+                    <form
+                      onSubmit={handleSubmit(handleFormSubmit)}
+                      className="mt-6 space-y-6"
+                    >
                       {!initialData ? (
                         <div>
-                          <label htmlFor="expenseNumber" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="expenseNumber"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Expense Number
                           </label>
                           <input
                             type="text"
                             id="expenseNumber"
-                            {...register('expenseNumber')}
+                            {...register("expenseNumber")}
                             className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                             readOnly
                           />
@@ -145,22 +157,32 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                       ) : null}
 
                       <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="description"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Description
                         </label>
                         <input
                           type="text"
                           id="description"
-                          {...register('description', { required: 'Description is required' })}
+                          {...register("description", {
+                            required: "Description is required",
+                          })}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         />
                         {errors.description && (
-                          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.description.message}
+                          </p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="amount"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Amount
                         </label>
                         <input
@@ -168,39 +190,56 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                           id="amount"
                           step="0.01"
                           min="0"
-                          {...register('amount', {
-                            required: 'Amount is required',
-                            min: { value: 0, message: 'Amount must be greater than 0' }
+                          {...register("amount", {
+                            required: "Amount is required",
+                            min: {
+                              value: 0,
+                              message: "Amount must be greater than 0",
+                            },
                           })}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         />
                         {errors.amount && (
-                          <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.amount.message}
+                          </p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="date"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Date
                         </label>
                         <input
                           type="date"
                           id="date"
-                          {...register('date', { required: 'Date is required' })}
+                          {...register("date", {
+                            required: "Date is required",
+                          })}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         />
                         {errors.date && (
-                          <p className="mt-1 text-sm text-red-600">{errors.date.message}</p>
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.date.message}
+                          </p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="category"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Category
                         </label>
                         <select
                           id="category"
-                          {...register('category', { required: 'Category is required' })}
+                          {...register("category", {
+                            required: "Category is required",
+                          })}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         >
                           <option value="">Select Category</option>
@@ -211,20 +250,29 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                           <option value="other">Other</option>
                         </select>
                         {errors.category && (
-                          <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.category.message}
+                          </p>
                         )}
                       </div>
 
                       {(canUpdateStatus || !initialData) && (
                         <div>
-                          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                          <label
+                            htmlFor="status"
+                            className="block text-sm font-medium text-gray-700"
+                          >
                             Status
                           </label>
                           <select
                             id="status"
-                            {...register('status', { required: 'Status is required' })}
+                            {...register("status", {
+                              required: "Status is required",
+                            })}
                             className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
-                              !canUpdateStatus && initialData ? 'bg-gray-100' : ''
+                              !canUpdateStatus && initialData
+                                ? "bg-gray-100"
+                                : ""
                             }`}
                             disabled={!canUpdateStatus && initialData}
                           >
@@ -233,7 +281,9 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                             <option value="Rejected">Rejected</option>
                           </select>
                           {errors.status && (
-                            <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {errors.status.message}
+                            </p>
                           )}
                           {!canUpdateStatus && initialData && (
                             <p className="mt-1 text-sm text-gray-500">
@@ -244,26 +294,32 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                       )}
 
                       <div>
-                        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="notes"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Notes
                         </label>
                         <textarea
                           id="notes"
                           rows={3}
-                          {...register('notes')}
+                          {...register("notes")}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         />
                       </div>
 
                       <div>
-                        <label htmlFor="documents" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="documents"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Supporting Documents
                         </label>
                         <input
                           type="file"
                           id="documents"
                           multiple
-                          {...register('documents')}
+                          {...register("documents")}
                           className="mt-1 block w-full text-sm text-gray-500
                             file:mr-4 file:py-2 file:px-4
                             file:rounded-md file:border-0
@@ -272,7 +328,9 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                             hover:file:bg-primary-100"
                         />
                         <p className="mt-1 text-sm text-gray-500">
-                          {initialData ? 'Upload additional documents (existing documents will be preserved)' : 'Upload any supporting documents (optional)'}
+                          {initialData
+                            ? "Upload additional documents (existing documents will be preserved)"
+                            : "Upload any supporting documents (optional)"}
                         </p>
                       </div>
 
@@ -282,7 +340,11 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                           disabled={isSubmitting}
                           className="inline-flex w-full justify-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {isSubmitting ? 'Submitting...' : initialData ? 'Update Expense' : 'Add Expense'}
+                          {isSubmitting
+                            ? "Submitting..."
+                            : initialData
+                            ? "Update Expense"
+                            : "Add Expense"}
                         </button>
                         <button
                           type="button"

@@ -1,13 +1,24 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useTable, usePagination } from 'react-table';
-import { PlusIcon, PencilIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { CurrencyDollarIcon, DocumentTextIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import OfficeLoanForm from '../../components/modules/frm/OfficeLoanForm';
-import frmService from '@/services/frmService';
-import { toast } from 'react-hot-toast';
-import { format } from 'date-fns';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal';
+import { useState, useEffect, useMemo } from "react";
+import { useTable, usePagination } from "react-table";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
+import {
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
+import OfficeLoanForm from "../../components/modules/frm/OfficeLoanForm";
+import frmService from "@/api/frmService";
+import { toast } from "react-hot-toast";
+import { format } from "date-fns";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 
 const OfficeLoanList = () => {
   const [showLoanForm, setShowLoanForm] = useState(false);
@@ -17,10 +28,10 @@ const OfficeLoanList = () => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [stats, setStats] = useState(null);
   const [filters, setFilters] = useState({
-    status: '',
-    department: '',
-    startDate: '',
-    endDate: ''
+    status: "",
+    department: "",
+    startDate: "",
+    endDate: "",
   });
 
   const fetchStats = async () => {
@@ -28,8 +39,8 @@ const OfficeLoanList = () => {
       const data = await frmService.getOfficeLoanStats();
       setStats(data);
     } catch (error) {
-      console.error('Error fetching stats:', error);
-      toast.error('Failed to fetch loan statistics');
+      console.error("Error fetching stats:", error);
+      toast.error("Failed to fetch loan statistics");
     }
   };
 
@@ -39,7 +50,7 @@ const OfficeLoanList = () => {
       const data = await frmService.getOfficeLoans(filters);
       setLoans(data);
     } catch (error) {
-      toast.error(error.message || 'Failed to fetch loans');
+      toast.error(error.message || "Failed to fetch loans");
     } finally {
       setLoading(false);
     }
@@ -54,16 +65,16 @@ const OfficeLoanList = () => {
     try {
       if (selectedLoan) {
         await frmService.updateOfficeLoan(selectedLoan._id, data);
-        toast.success('Loan request updated successfully');
+        toast.success("Loan request updated successfully");
       } else {
         await frmService.createOfficeLoan(data);
-        toast.success('Loan request submitted successfully');
+        toast.success("Loan request submitted successfully");
       }
       setShowLoanForm(false);
       setSelectedLoan(null);
       fetchLoans();
     } catch (error) {
-      toast.error(error.message || 'Failed to submit loan request');
+      toast.error(error.message || "Failed to submit loan request");
     }
   };
 
@@ -75,12 +86,12 @@ const OfficeLoanList = () => {
   const handleDelete = async () => {
     try {
       await frmService.deleteOfficeLoan(selectedLoan._id);
-      toast.success('Loan request deleted successfully');
+      toast.success("Loan request deleted successfully");
       setShowDeleteConfirmation(false);
       setSelectedLoan(null);
       fetchLoans();
     } catch (error) {
-      toast.error(error.message || 'Failed to delete loan request');
+      toast.error(error.message || "Failed to delete loan request");
     }
   };
 
@@ -90,48 +101,53 @@ const OfficeLoanList = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
   const columns = useMemo(
     () => [
-      { 
-        Header: 'Purpose',
-        accessor: 'purpose'
+      {
+        Header: "Purpose",
+        accessor: "purpose",
       },
       {
-        Header: 'Amount',
-        accessor: 'amount',
-        Cell: ({ value }) => formatCurrency(value)
+        Header: "Amount",
+        accessor: "amount",
+        Cell: ({ value }) => formatCurrency(value),
       },
       {
-        Header: 'Department',
-        accessor: 'department'
+        Header: "Department",
+        accessor: "department",
       },
       {
-        Header: 'Request Date',
-        accessor: 'requestDate',
-        Cell: ({ value }) => format(new Date(value), 'MMM d, yyyy')
+        Header: "Request Date",
+        accessor: "requestDate",
+        Cell: ({ value }) => format(new Date(value), "MMM d, yyyy"),
       },
       {
-        Header: 'Status',
-        accessor: 'status',
+        Header: "Status",
+        accessor: "status",
         Cell: ({ value }) => (
-          <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-            value === 'Approved' ? 'bg-green-100 text-green-800' :
-            value === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-            value === 'Rejected' ? 'bg-red-100 text-red-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
+          <span
+            className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+              value === "Approved"
+                ? "bg-green-100 text-green-800"
+                : value === "Pending"
+                ? "bg-yellow-100 text-yellow-800"
+                : value === "Rejected"
+                ? "bg-red-100 text-red-800"
+                : "bg-gray-100 text-gray-800"
+            }`}
+          >
             {value}
           </span>
-        )
+        ),
       },
       {
-        Header: 'Actions',
+        Header: "Actions",
         Cell: ({ row }) => (
           <div className="flex justify-start gap-2">
             <button
@@ -149,8 +165,8 @@ const OfficeLoanList = () => {
               Delete
             </button>
           </div>
-        )
-      }
+        ),
+      },
     ],
     []
   );
@@ -171,12 +187,12 @@ const OfficeLoanList = () => {
     nextPage,
     previousPage,
     setPageSize,
-    state: { pageIndex, pageSize }
+    state: { pageIndex, pageSize },
   } = useTable(
     {
       columns,
       data,
-      initialState: { pageIndex: 0, pageSize: 10 }
+      initialState: { pageIndex: 0, pageSize: 10 },
     },
     usePagination
   );
@@ -187,7 +203,8 @@ const OfficeLoanList = () => {
         <div className="sm:flex-auto">
           <h1 className="text-xl font-semibold text-gray-900">Office Loans</h1>
           <p className="mt-2 text-sm text-gray-700">
-            A list of all office loans including amount, purpose, status, and repayment details.
+            A list of all office loans including amount, purpose, status, and
+            repayment details.
           </p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
@@ -210,16 +227,21 @@ const OfficeLoanList = () => {
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                    <CurrencyDollarIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
+                    <CurrencyDollarIcon
+                      className="h-6 w-6 text-blue-600"
+                      aria-hidden="true"
+                    />
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="truncate text-sm font-medium text-gray-500">Total Loan Amount</dt>
+                    <dt className="truncate text-sm font-medium text-gray-500">
+                      Total Loan Amount
+                    </dt>
                     <dd className="text-lg font-medium text-gray-900">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD'
+                      {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
                       }).format(stats.totalAmount || 0)}
                     </dd>
                   </dl>
@@ -233,17 +255,23 @@ const OfficeLoanList = () => {
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                    <DocumentTextIcon className="h-6 w-6 text-green-600" aria-hidden="true" />
+                    <DocumentTextIcon
+                      className="h-6 w-6 text-green-600"
+                      aria-hidden="true"
+                    />
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="truncate text-sm font-medium text-gray-500">Total Loans</dt>
+                    <dt className="truncate text-sm font-medium text-gray-500">
+                      Total Loans
+                    </dt>
                     <dd className="text-lg font-medium text-gray-900">
                       <div className="flex flex-col">
                         <span>{stats.totalCount || 0}</span>
                         <span className="text-xs text-gray-500">
-                          {stats.pendingCount || 0} Pending · {stats.approvedCount || 0} Approved
+                          {stats.pendingCount || 0} Pending ·{" "}
+                          {stats.approvedCount || 0} Approved
                         </span>
                       </div>
                     </dd>
@@ -258,16 +286,21 @@ const OfficeLoanList = () => {
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-yellow-100">
-                    <ClockIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
+                    <ClockIcon
+                      className="h-6 w-6 text-yellow-600"
+                      aria-hidden="true"
+                    />
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="truncate text-sm font-medium text-gray-500">Total Outstanding</dt>
+                    <dt className="truncate text-sm font-medium text-gray-500">
+                      Total Outstanding
+                    </dt>
                     <dd className="text-lg font-medium text-gray-900">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD'
+                      {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
                       }).format(stats.totalRemaining || 0)}
                     </dd>
                   </dl>
@@ -281,16 +314,24 @@ const OfficeLoanList = () => {
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
-                    <CheckCircleIcon className="h-6 w-6 text-purple-600" aria-hidden="true" />
+                    <CheckCircleIcon
+                      className="h-6 w-6 text-purple-600"
+                      aria-hidden="true"
+                    />
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="truncate text-sm font-medium text-gray-500">Department Breakdown</dt>
+                    <dt className="truncate text-sm font-medium text-gray-500">
+                      Department Breakdown
+                    </dt>
                     <dd className="text-sm text-gray-900">
                       <div className="max-h-20 overflow-y-auto">
                         {stats.departmentBreakdown?.map((dept) => (
-                          <div key={dept.department} className="flex justify-between text-xs">
+                          <div
+                            key={dept.department}
+                            className="flex justify-between text-xs"
+                          >
                             <span>{dept.department}</span>
                             <span>{dept.count} loans</span>
                           </div>
@@ -309,7 +350,9 @@ const OfficeLoanList = () => {
       <div className="mt-4 space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <select
           value={filters.status}
-          onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, status: e.target.value }))
+          }
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
         >
           <option value="">All Status</option>
@@ -320,7 +363,9 @@ const OfficeLoanList = () => {
 
         <select
           value={filters.department}
-          onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, department: e.target.value }))
+          }
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
         >
           <option value="">All Departments</option>
@@ -336,7 +381,9 @@ const OfficeLoanList = () => {
             <input
               type="date"
               value={filters.startDate}
-              onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, startDate: e.target.value }))
+              }
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
               placeholder="Start Date"
             />
@@ -348,7 +395,9 @@ const OfficeLoanList = () => {
             <input
               type="date"
               value={filters.endDate}
-              onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, endDate: e.target.value }))
+              }
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
               placeholder="End Date"
             />
@@ -369,31 +418,47 @@ const OfficeLoanList = () => {
                 prepareRow(row);
                 const loan = row.original;
                 return (
-                  <div key={loan._id} className="bg-white shadow rounded-lg overflow-hidden">
+                  <div
+                    key={loan._id}
+                    className="bg-white shadow rounded-lg overflow-hidden"
+                  >
                     <div className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
-                          <p className="text-sm font-medium text-gray-900 line-clamp-2">{loan.purpose}</p>
-                          <p className="text-sm text-gray-500">{loan.department}</p>
+                          <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                            {loan.purpose}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {loan.department}
+                          </p>
                         </div>
-                        <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                          loan.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                          loan.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          loan.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                            loan.status === "Approved"
+                              ? "bg-green-100 text-green-800"
+                              : loan.status === "Pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : loan.status === "Rejected"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
                           {loan.status}
                         </span>
                       </div>
                       <div className="mt-3 space-y-2">
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-500">Amount:</span>
-                          <span className="text-sm font-medium text-gray-900">{formatCurrency(loan.amount)}</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {formatCurrency(loan.amount)}
+                          </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Request Date:</span>
+                          <span className="text-sm text-gray-500">
+                            Request Date:
+                          </span>
                           <span className="text-sm text-gray-900">
-                            {format(new Date(loan.requestDate), 'MMM d, yyyy')}
+                            {format(new Date(loan.requestDate), "MMM d, yyyy")}
                           </span>
                         </div>
                       </div>
@@ -430,32 +495,38 @@ const OfficeLoanList = () => {
                   <LoadingSpinner />
                 </div>
               ) : (
-                <table className="min-w-full divide-y divide-gray-300" {...getTableProps()}>
+                <table
+                  className="min-w-full divide-y divide-gray-300"
+                  {...getTableProps()}
+                >
                   <thead className="bg-gray-50">
-                    {headerGroups.map(headerGroup => (
+                    {headerGroups.map((headerGroup) => (
                       <tr {...headerGroup.getHeaderGroupProps()}>
-                        {headerGroup.headers.map(column => (
+                        {headerGroup.headers.map((column) => (
                           <th
                             {...column.getHeaderProps()}
                             className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
                           >
-                            {column.render('Header')}
+                            {column.render("Header")}
                           </th>
                         ))}
                       </tr>
                     ))}
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white" {...getTableBodyProps()}>
-                    {page.map(row => {
+                  <tbody
+                    className="divide-y divide-gray-200 bg-white"
+                    {...getTableBodyProps()}
+                  >
+                    {page.map((row) => {
                       prepareRow(row);
                       return (
                         <tr {...row.getRowProps()}>
-                          {row.cells.map(cell => (
+                          {row.cells.map((cell) => (
                             <td
                               {...cell.getCellProps()}
                               className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
                             >
-                              {cell.render('Cell')}
+                              {cell.render("Cell")}
                             </td>
                           ))}
                         </tr>
@@ -490,8 +561,8 @@ const OfficeLoanList = () => {
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Showing page{' '}
-                  <span className="font-medium">{pageIndex + 1}</span> of{' '}
+                  Showing page{" "}
+                  <span className="font-medium">{pageIndex + 1}</span> of{" "}
                   <span className="font-medium">{pageOptions.length}</span>
                 </p>
               </div>
@@ -517,7 +588,7 @@ const OfficeLoanList = () => {
           </div>
         )}
       </div>
-      
+
       <OfficeLoanForm
         open={showLoanForm}
         setOpen={setShowLoanForm}
@@ -536,4 +607,4 @@ const OfficeLoanList = () => {
   );
 };
 
-export default OfficeLoanList; 
+export default OfficeLoanList;

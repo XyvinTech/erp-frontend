@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import api from '../services/api';
-import { projectService } from '../services/project.service';
+import { projectService } from '../api/project.service';
 
 const useProjectStore = create((set, get) => ({
   projects: [],
@@ -14,12 +13,12 @@ const useProjectStore = create((set, get) => ({
     try {
       const response = await projectService.getProjects();
       console.log('fetchProjects raw response:', response);
-      
+
       // Ensure we have an array of projects
-      const projectsArray = Array.isArray(response) ? response : 
-                          Array.isArray(response?.projects) ? response.projects :
-                          Array.isArray(response?.data) ? response.data : [];
-      
+      const projectsArray = Array.isArray(response) ? response :
+        Array.isArray(response?.projects) ? response.projects :
+          Array.isArray(response?.data) ? response.data : [];
+
       // Format each project
       const formattedProjects = projectsArray.map(project => ({
         ...project,
@@ -28,20 +27,20 @@ const useProjectStore = create((set, get) => ({
         // Handle client reference which can be either an ObjectId string or an object with $oid
         client: project.client?.$oid || project.client?._id || project.client?.id || project.client || project.clientId,
         // Handle team members array which contains ObjectId references
-        team: (project.team || project.assignedEmployees || []).map(member => 
+        team: (project.team || project.assignedEmployees || []).map(member =>
           typeof member === 'object' ? (member.$oid || member._id || member.id) : member
         ),
         // Keep status as-is, just ensure lowercase
         status: (project.status || 'planning').toLowerCase()
       }));
-      
+
       console.log('Setting formatted projects in store:', formattedProjects);
-      
-      set({ 
-        projects: formattedProjects, 
-        loading: false 
+
+      set({
+        projects: formattedProjects,
+        loading: false
       });
-      
+
       return formattedProjects;
     } catch (error) {
       console.error('Error in fetchProjects:', error);
@@ -67,7 +66,7 @@ const useProjectStore = create((set, get) => ({
     try {
       const newProject = await projectService.createProject(projectData);
       console.log('New project created:', newProject);
-      
+
       if (newProject) {
         set((state) => {
           const updatedProjects = [...state.projects, newProject];
@@ -78,7 +77,7 @@ const useProjectStore = create((set, get) => ({
           };
         });
       }
-      
+
       return newProject;
     } catch (error) {
       console.error('Error in createProject:', error);
@@ -96,12 +95,12 @@ const useProjectStore = create((set, get) => ({
   updateProject: async (id, data) => {
     try {
       console.log('Updating project:', { id, data });
-      
+
       // Remove _id from the data before sending to API
       const { _id, id: projectId, ...updateData } = data;
-      
+
       const response = await projectService.updateProject(id, updateData);
-      
+
       if (response) {
         set((state) => ({
           projects: state.projects.map((p) =>
@@ -126,9 +125,9 @@ const useProjectStore = create((set, get) => ({
     try {
       const result = await projectService.deleteProject(id);
       console.log('Project deletion result:', result);
-      
+
       set((state) => {
-        const updatedProjects = state.projects.filter((project) => 
+        const updatedProjects = state.projects.filter((project) =>
           project._id !== id && project.id !== id
         );
         console.log('Updated projects list after deletion:', updatedProjects);
@@ -172,7 +171,7 @@ const useProjectStore = create((set, get) => ({
     try {
       const updatedProject = await projectService.assignEmployees(projectId, employeeIds);
       console.log('Project assignment result:', updatedProject);
-      
+
       set((state) => {
         const updatedProjects = state.projects.map((project) =>
           (project._id === projectId || project.id === projectId) ? updatedProject : project
@@ -184,7 +183,7 @@ const useProjectStore = create((set, get) => ({
           loading: false
         };
       });
-      
+
       return updatedProject;
     } catch (error) {
       console.error('Error in assignEmployees:', error);

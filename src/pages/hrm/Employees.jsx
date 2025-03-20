@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useTable, useSortBy, usePagination } from 'react-table';
-import { toast } from 'react-hot-toast';
+import { useEffect, useState, useMemo } from "react";
+import { useTable, useSortBy, usePagination } from "react-table";
+import { toast } from "react-hot-toast";
 import {
   PlusIcon,
   PencilIcon,
@@ -9,17 +9,20 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-} from '@heroicons/react/24/outline';
-import useHrmStore from '../../store/hrm/useHrmStore';
-import * as hrmService from '../../services/hrm/hrmService';
-import EmployeeModal from '../../components/modules/hrm/EmployeeModal';
-import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
+} from "@heroicons/react/24/outline";
+import useHrmStore from "../../stores/useHrmStore";
+import EmployeeModal from "../../components/modules/hrm/EmployeeModal";
+import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 
 const Employees = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, employee: null });
-  const { employees, employeesLoading, employeesError, fetchEmployees } = useHrmStore();
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    employee: null,
+  });
+  const { employees, employeesLoading, employeesError, fetchEmployees, deleteEmployee } =
+    useHrmStore();
 
   useEffect(() => {
     fetchEmployees();
@@ -29,49 +32,50 @@ const Employees = () => {
   const columns = useMemo(
     () => [
       {
-        Header: 'Employee ID',
-        accessor: 'employeeId',
+        Header: "Employee ID",
+        accessor: "employeeId",
       },
       {
-        Header: 'Name',
+        Header: "Name",
         accessor: (row) => `${row.firstName} ${row.lastName}`,
       },
       {
-        Header: 'Email',
-        accessor: 'email',
+        Header: "Email",
+        accessor: "email",
       },
       {
-        Header: 'Department',
-        accessor: 'department.name',
+        Header: "Department",
+        accessor: "department.name",
       },
       {
-        Header: 'Position',
-        accessor: 'position.title',
+        Header: "Position",
+        accessor: "position.title",
       },
       {
-        Header: 'Status',
-        accessor: 'status',
+        Header: "Status",
+        accessor: "status",
         Cell: ({ value }) => {
           const statusColors = {
-            active: 'bg-green-100 text-green-800',
-            inactive: 'bg-red-100 text-red-800',
-            on_leave: 'bg-yellow-100 text-yellow-800',
-            suspended: 'bg-orange-100 text-orange-800'
+            active: "bg-green-100 text-green-800",
+            inactive: "bg-red-100 text-red-800",
+            on_leave: "bg-yellow-100 text-yellow-800",
+            suspended: "bg-orange-100 text-orange-800",
           };
 
           return (
             <span
               className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                statusColors[value?.toLowerCase()] || 'bg-gray-100 text-gray-800'
+                statusColors[value?.toLowerCase()] ||
+                "bg-gray-100 text-gray-800"
               }`}
             >
-              {value?.charAt(0).toUpperCase() + value?.slice(1) || 'Unknown'}
+              {value?.charAt(0).toUpperCase() + value?.slice(1) || "Unknown"}
             </span>
           );
         },
       },
       {
-        Header: 'Actions',
+        Header: "Actions",
         Cell: ({ row }) => (
           <div className="flex space-x-2">
             <button
@@ -137,13 +141,13 @@ const Employees = () => {
   const handleDelete = async () => {
     try {
       const id = deleteModal.employee.id || deleteModal.employee._id;
-      await hrmService.deleteEmployee(id);
-      toast.success('Employee deleted successfully');
+      await deleteEmployee(id);
+      toast.success("Employee deleted successfully");
       fetchEmployees();
       setDeleteModal({ isOpen: false, employee: null });
     } catch (error) {
-      console.error('Error deleting employee:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete employee');
+      console.error("Error deleting employee:", error);
+      toast.error(error.response?.data?.message || "Failed to delete employee");
     }
   };
 
@@ -181,14 +185,20 @@ const Employees = () => {
 
       <div className="overflow-x-auto">
         <div className="inline-block min-w-full align-middle">
-          <table className="min-w-full divide-y divide-gray-300" {...getTableProps()}>
+          <table
+            className="min-w-full divide-y divide-gray-300"
+            {...getTableProps()}
+          >
             <thead>
-              {headerGroups.map(headerGroup => {
-                const { key, ...headerGroupProps } = headerGroup.getHeaderGroupProps();
+              {headerGroups.map((headerGroup) => {
+                const { key, ...headerGroupProps } =
+                  headerGroup.getHeaderGroupProps();
                 return (
                   <tr key={key} {...headerGroupProps}>
-                    {headerGroup.headers.map(column => {
-                      const { key, ...columnProps } = column.getHeaderProps(column.getSortByToggleProps());
+                    {headerGroup.headers.map((column) => {
+                      const { key, ...columnProps } = column.getHeaderProps(
+                        column.getSortByToggleProps()
+                      );
                       return (
                         <th
                           key={key}
@@ -196,7 +206,7 @@ const Employees = () => {
                           className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                         >
                           <div className="group inline-flex">
-                            {column.render('Header')}
+                            {column.render("Header")}
                             <span className="ml-2 flex-none rounded">
                               {column.isSorted ? (
                                 column.isSortedDesc ? (
@@ -214,13 +224,16 @@ const Employees = () => {
                 );
               })}
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white" {...getTableBodyProps()}>
-              {page.map(row => {
+            <tbody
+              className="divide-y divide-gray-200 bg-white"
+              {...getTableBodyProps()}
+            >
+              {page.map((row) => {
                 prepareRow(row);
                 const { key, ...rowProps } = row.getRowProps();
                 return (
                   <tr key={key} {...rowProps}>
-                    {row.cells.map(cell => {
+                    {row.cells.map((cell) => {
                       const { key, ...cellProps } = cell.getCellProps();
                       return (
                         <td
@@ -228,7 +241,7 @@ const Employees = () => {
                           {...cellProps}
                           className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
                         >
-                          {cell.render('Cell')}
+                          {cell.render("Cell")}
                         </td>
                       );
                     })}
@@ -261,9 +274,8 @@ const Employees = () => {
         <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-gray-700">
-              Showing page{' '}
-              <span className="font-medium">{pageIndex + 1}</span> of{' '}
-              <span className="font-medium">{pageOptions.length}</span>
+              Showing page <span className="font-medium">{pageIndex + 1}</span>{" "}
+              of <span className="font-medium">{pageOptions.length}</span>
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -312,4 +324,4 @@ const Employees = () => {
   );
 };
 
-export default Employees; 
+export default Employees;

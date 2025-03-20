@@ -1,74 +1,75 @@
-import React, { useEffect } from 'react';
-import { Dialog, Switch } from '@headlessui/react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'react-hot-toast';
-import * as hrmService from '../../../services/hrm/hrmService';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import useHrmStore from '../../../store/hrm/useHrmStore';
+import React, { useEffect } from "react";
+import { Dialog, Switch } from "@headlessui/react";
+import { useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import useHrmStore from "../../../stores/useHrmStore";  
 
 const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
-  const { departments, fetchDepartments } = useHrmStore();
+  const { departments, fetchDepartments, getNextPositionCode } = useHrmStore();
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
     setValue,
-    watch
+    watch,
   } = useForm();
-  const selectedDepartment = watch('department');
+  const selectedDepartment = watch("department");
   useEffect(() => {
     fetchDepartments();
   }, [fetchDepartments]);
 
   useEffect(() => {
-    console.log('Current departments:', departments);
+    console.log("Current departments:", departments);
     if (position) {
-      setValue('title', position.title);
-      setValue('code', position.code);
-      setValue('description', position.description);
-      
-      // Find the department object and set its value without disabling
-      const departmentId = typeof position.department === 'object' 
-        ? position.department._id || position.department.id 
-        : position.department;
-      
-      // Simply set the value, no need to find department object or disable
-      setValue('department', departmentId);
+      setValue("title", position.title);
+      setValue("code", position.code);
+      setValue("description", position.description);
 
-      setValue('responsibilities', position.responsibilities?.join('\n'));
-      setValue('requirements', position.requirements?.join('\n'));
-      setValue('employmentType', position.employmentType);
-      setValue('isActive', position.isActive);
-      setValue('level', position.level || 1);
-      setValue('maxPositions', position.maxPositions || 1);
+      // Find the department object and set its value without disabling
+      const departmentId =
+        typeof position.department === "object"
+          ? position.department._id || position.department.id
+          : position.department;
+
+      // Simply set the value, no need to find department object or disable
+      setValue("department", departmentId);
+
+      setValue("responsibilities", position.responsibilities?.join("\n"));
+      setValue("requirements", position.requirements?.join("\n"));
+      setValue("employmentType", position.employmentType);
+      setValue("isActive", position.isActive);
+      setValue("level", position.level || 1);
+      setValue("maxPositions", position.maxPositions || 1);
     } else {
       reset({
         isActive: true,
         level: 1,
         maxPositions: 1,
-        employmentType: 'Full-time'
+        employmentType: "Full-time",
       });
     }
   }, [position, setValue, reset, departments]);
   useEffect(() => {
-    console.log('Selected department changed:', selectedDepartment);
+    console.log("Selected department changed:", selectedDepartment);
   }, [selectedDepartment]);
 
   useEffect(() => {
     const fetchPositionCode = async () => {
-      if (!position) { // Only fetch new code when creating new position
+      if (!position) {
+        // Only fetch new code when creating new position
         try {
-          const response = await hrmService.getNextPositionCode();
+          const response = await getNextPositionCode();
           const code = response?.data?.position?.code || response?.data?.code;
           if (code) {
-            setValue('code', code);
+            setValue("code", code);
           } else {
-            throw new Error('Invalid response format');
+            throw new Error("Invalid response format");
           }
         } catch (error) {
-          console.error('Error fetching position code:', error);
-          toast.error('Failed to generate position code');
+          console.error("Error fetching position code:", error);
+          toast.error("Failed to generate position code");
         }
       }
     };
@@ -78,45 +79,55 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
 
   const onSubmit = async (data) => {
     try {
-      console.log('Form data before submission:', data);
-      console.log('Selected department ID:', data.department);
+      console.log("Form data before submission:", data);
+      console.log("Selected department ID:", data.department);
       // Validate department ID
       if (!data.department || !/^[0-9a-fA-F]{24}$/.test(data.department)) {
-        throw new Error('Invalid department selected');
+        throw new Error("Invalid department selected");
       }
-   // Check if the selected department exists in the available departments
-   const departmentExists = departments.some(dept => dept.id === data.department);
-   if (!departmentExists) {
-     throw new Error('Selected department is not valid. Please select again.');
-   }
-        // Find the selected department to verify it exists
-        const selectedDept = departments.find(dept => dept.id === data.department);
-        if (!selectedDept) {
-          throw new Error('Invalid department selected. Please try again.');
-        }
-  
-        const formattedData = {
-          ...data,
-          // Ensure department is the MongoDB ObjectId string
-          department: selectedDept.id,
-          responsibilities: data.responsibilities.split('\n').filter(item => item.trim()),
-          requirements: data.requirements.split('\n').filter(item => item.trim()),
-          level: parseInt(data.level),
-          maxPositions: parseInt(data.maxPositions)
-        };
+      // Check if the selected department exists in the available departments
+      const departmentExists = departments.some(
+        (dept) => dept.id === data.department
+      );
+      if (!departmentExists) {
+        throw new Error(
+          "Selected department is not valid. Please select again."
+        );
+      }
+      // Find the selected department to verify it exists
+      const selectedDept = departments.find(
+        (dept) => dept.id === data.department
+      );
+      if (!selectedDept) {
+        throw new Error("Invalid department selected. Please try again.");
+      }
+
+      const formattedData = {
+        ...data,
+        // Ensure department is the MongoDB ObjectId string
+        department: selectedDept.id,
+        responsibilities: data.responsibilities
+          .split("\n")
+          .filter((item) => item.trim()),
+        requirements: data.requirements
+          .split("\n")
+          .filter((item) => item.trim()),
+        level: parseInt(data.level),
+        maxPositions: parseInt(data.maxPositions),
+      };
 
       if (position) {
         await hrmService.updatePosition(position.id, formattedData);
-        toast.success('Position updated successfully');
+        toast.success("Position updated successfully");
       } else {
         await hrmService.createPosition(formattedData);
-        toast.success('Position created successfully');
+        toast.success("Position created successfully");
       }
-      
+
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error(error.message || 'Something went wrong');
+      toast.error(error.message || "Something went wrong");
     }
   };
 
@@ -127,7 +138,7 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
         <Dialog.Panel className="mx-auto max-w-xl w-full rounded bg-white p-4">
           <div className="flex items-center justify-between mb-4">
             <Dialog.Title className="text-lg font-medium">
-              {position ? 'Edit Position' : 'Create Position'}
+              {position ? "Edit Position" : "Create Position"}
             </Dialog.Title>
             <button
               onClick={onClose}
@@ -145,11 +156,13 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                 </label>
                 <input
                   type="text"
-                  {...register('title', { required: 'Title is required' })}
+                  {...register("title", { required: "Title is required" })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                 />
                 {errors.title && (
-                  <p className="mt-1 text-xs text-red-600">{errors.title.message}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.title.message}
+                  </p>
                 )}
               </div>
 
@@ -162,12 +175,14 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                   id="code"
                   name="code"
                   className="input"
-                  {...register('code')}
+                  {...register("code")}
                   readOnly
                   disabled
                 />
                 {errors.code && (
-                  <p className="mt-1 text-xs text-red-600">{errors.code.message}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.code.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -178,24 +193,30 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                   Department
                 </label>
                 <select
-                  {...register('department', { required: 'Department is required' })}
+                  {...register("department", {
+                    required: "Department is required",
+                  })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm "
                 >
                   <option value="">Select Department</option>
                   {departments?.map((dept) => (
-                    <option key={dept.id || dept._id} value={dept.id || dept._id}>
+                    <option
+                      key={dept.id || dept._id}
+                      value={dept.id || dept._id}
+                    >
                       {dept.name}
                     </option>
                   ))}
                 </select>
                 {errors.department && (
-                  <p className="mt-1 text-xs text-red-600">{errors.department.message}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.department.message}
+                  </p>
                 )}
                 {/* Debug info */}
                 <p className="mt-1 text-xs text-gray-500">
-                  Selected ID: {selectedDepartment || 'none'}
+                  Selected ID: {selectedDepartment || "none"}
                 </p>
-
               </div>
 
               <div>
@@ -203,7 +224,9 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                   Employment Type
                 </label>
                 <select
-                  {...register('employmentType', { required: 'Employment type is required' })}
+                  {...register("employmentType", {
+                    required: "Employment type is required",
+                  })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                 >
                   <option value="Full-time">Full-time</option>
@@ -212,7 +235,9 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                   <option value="Intern">Intern</option>
                 </select>
                 {errors.employmentType && (
-                  <p className="mt-1 text-xs text-red-600">{errors.employmentType.message}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.employmentType.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -225,14 +250,16 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                 <input
                   type="number"
                   min="1"
-                  {...register('level', { 
-                    required: 'Level is required',
-                    min: { value: 1, message: 'Level must be at least 1' }
+                  {...register("level", {
+                    required: "Level is required",
+                    min: { value: 1, message: "Level must be at least 1" },
                   })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                 />
                 {errors.level && (
-                  <p className="mt-1 text-xs text-red-600">{errors.level.message}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.level.message}
+                  </p>
                 )}
               </div>
 
@@ -243,14 +270,19 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                 <input
                   type="number"
                   min="1"
-                  {...register('maxPositions', { 
-                    required: 'Max positions is required',
-                    min: { value: 1, message: 'Max positions must be at least 1' }
+                  {...register("maxPositions", {
+                    required: "Max positions is required",
+                    min: {
+                      value: 1,
+                      message: "Max positions must be at least 1",
+                    },
                   })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                 />
                 {errors.maxPositions && (
-                  <p className="mt-1 text-xs text-red-600">{errors.maxPositions.message}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.maxPositions.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -260,12 +292,16 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                 Description
               </label>
               <textarea
-                {...register('description', { required: 'Description is required' })}
+                {...register("description", {
+                  required: "Description is required",
+                })}
                 rows={2}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
               />
               {errors.description && (
-                <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.description.message}
+                </p>
               )}
             </div>
 
@@ -274,12 +310,16 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                 Responsibilities (one per line)
               </label>
               <textarea
-                {...register('responsibilities', { required: 'At least one responsibility is required' })}
+                {...register("responsibilities", {
+                  required: "At least one responsibility is required",
+                })}
                 rows={3}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
               />
               {errors.responsibilities && (
-                <p className="mt-1 text-xs text-red-600">{errors.responsibilities.message}</p>
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.responsibilities.message}
+                </p>
               )}
             </div>
 
@@ -288,12 +328,16 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                 Requirements (one per line)
               </label>
               <textarea
-                {...register('requirements', { required: 'At least one requirement is required' })}
+                {...register("requirements", {
+                  required: "At least one requirement is required",
+                })}
                 rows={3}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
               />
               {errors.requirements && (
-                <p className="mt-1 text-xs text-red-600">{errors.requirements.message}</p>
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.requirements.message}
+                </p>
               )}
             </div>
 
@@ -303,23 +347,23 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
               </label>
               <div className="flex items-center space-x-3">
                 <Switch
-                  checked={watch('isActive')}
+                  checked={watch("isActive")}
                   onChange={(checked) => {
-                    setValue('isActive', checked);
+                    setValue("isActive", checked);
                   }}
                   className={`${
-                    watch('isActive') ? 'bg-black' : 'bg-gray-200'
+                    watch("isActive") ? "bg-black" : "bg-gray-200"
                   } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2`}
                 >
                   <span className="sr-only">Enable status</span>
                   <span
                     className={`${
-                      watch('isActive') ? 'translate-x-6' : 'translate-x-1'
+                      watch("isActive") ? "translate-x-6" : "translate-x-1"
                     } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
                   />
                 </Switch>
                 <span className="text-sm text-gray-600">
-                  {watch('isActive') ? 'Active' : 'Inactive'}
+                  {watch("isActive") ? "Active" : "Inactive"}
                 </span>
               </div>
               {errors.isActive && (
@@ -332,15 +376,15 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
                 type="submit"
                 disabled={errors.isActive}
                 className={`inline-flex w-full justify-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 sm:ml-3 sm:w-auto ${
-                  errors.isActive ? 'opacity-50 cursor-not-allowed' : ''
+                  errors.isActive ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
                 {errors.isActive ? (
                   <div className="spinner border-2 h-5 w-5" />
                 ) : position ? (
-                  'Update'
+                  "Update"
                 ) : (
-                  'Create'
+                  "Create"
                 )}
               </button>
               <button

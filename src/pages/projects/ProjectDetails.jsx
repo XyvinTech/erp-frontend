@@ -1,10 +1,17 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useProjectStore } from '@/stores/projectStore';
-import { ClockIcon, UserGroupIcon, CalendarIcon, CheckCircleIcon, ChatBubbleLeftIcon, PaperClipIcon } from '@heroicons/react/24/outline';
-import { motion } from 'framer-motion';
-import { toast } from 'react-hot-toast';
-import { projectService } from '@/services/project.service';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useProjectStore } from "@/stores/projectStore";
+import {
+  ClockIcon,
+  UserGroupIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+  ChatBubbleLeftIcon,
+  PaperClipIcon,
+} from "@heroicons/react/24/outline";
+import { motion } from "framer-motion";
+import { toast } from "react-hot-toast";
+import { projectService } from "@/api/project.service";
 
 const ProjectDetails = () => {
   const navigate = useNavigate();
@@ -17,16 +24,16 @@ const ProjectDetails = () => {
         setLoading(true);
         // Use the getProjects method that includes population of related data
         const projectsData = await projectService.getProjects();
-        console.log('Fetched projects:', projectsData);
-        
+        console.log("Fetched projects:", projectsData);
+
         if (!projectsData || projectsData.length === 0) {
-          throw new Error('No projects found');
+          throw new Error("No projects found");
         }
-        
+
         setProjects(projectsData);
       } catch (error) {
-        console.error('Error loading projects:', error);
-        toast.error(error.message || 'Failed to load projects');
+        console.error("Error loading projects:", error);
+        toast.error(error.message || "Failed to load projects");
       } finally {
         setLoading(false);
       }
@@ -50,9 +57,11 @@ const ProjectDetails = () => {
   if (!projects || projects.length === 0) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-semibold text-gray-900">No projects found</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">
+          No projects found
+        </h2>
         <button
-          onClick={() => navigate('/projects/list')}
+          onClick={() => navigate("/projects/list")}
           className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800"
         >
           Back to Projects List
@@ -63,31 +72,31 @@ const ProjectDetails = () => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'in_progress':
-      case 'in-progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'on_hold':
-      case 'on-hold':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "in_progress":
+      case "in-progress":
+        return "bg-blue-100 text-blue-800";
+      case "on_hold":
+      case "on-hold":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
+      case "high":
+        return "bg-red-100 text-red-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-green-100 text-green-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -95,7 +104,9 @@ const ProjectDetails = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Project Details</h1>
-        <p className="mt-2 text-gray-600">Overview of all projects and their details</p>
+        <p className="mt-2 text-gray-600">
+          Overview of all projects and their details
+        </p>
       </div>
 
       <div className="space-y-8">
@@ -111,21 +122,32 @@ const ProjectDetails = () => {
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{project.name}</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {project.name}
+                  </h2>
                   <p className="text-gray-600 mb-4">{project.description}</p>
                   <div className="flex flex-wrap items-center gap-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(project.status)}`}>
-                      {project.status?.replace(/[-_]/g, ' ').toUpperCase() || 'PLANNING'}
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                        project.status
+                      )}`}
+                    >
+                      {project.status?.replace(/[-_]/g, " ").toUpperCase() ||
+                        "PLANNING"}
                     </span>
                     <div className="flex items-center text-gray-500">
                       <CalendarIcon className="h-5 w-5 mr-2" />
                       <span>
-                        {new Date(project.startDate).toLocaleDateString()} - 
-                        {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'Ongoing'}
+                        {new Date(project.startDate).toLocaleDateString()} -
+                        {project.endDate
+                          ? new Date(project.endDate).toLocaleDateString()
+                          : "Ongoing"}
                       </span>
                     </div>
                     <button
-                      onClick={() => handleViewKanban(project._id || project.id)}
+                      onClick={() =>
+                        handleViewKanban(project._id || project.id)
+                      }
                       className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium text-white bg-black hover:bg-gray-800 transition-colors"
                     >
                       View Kanban Board
@@ -134,12 +156,18 @@ const ProjectDetails = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Client</p>
-                  <p className="text-lg font-semibold">{project.client?.name || 'N/A'}</p>
+                  <p className="text-lg font-semibold">
+                    {project.client?.name || "N/A"}
+                  </p>
                   {project.client?.company && (
-                    <p className="text-sm text-gray-500">{project.client.company}</p>
+                    <p className="text-sm text-gray-500">
+                      {project.client.company}
+                    </p>
                   )}
                   {project.client?.email && (
-                    <p className="text-sm text-gray-500">{project.client.email}</p>
+                    <p className="text-sm text-gray-500">
+                      {project.client.email}
+                    </p>
                   )}
                 </div>
               </div>
@@ -154,31 +182,54 @@ const ProjectDetails = () => {
                 </h3>
                 <div className="space-y-4">
                   {project.tasks?.map((task) => (
-                    <div key={task._id || task.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div
+                      key={task._id || task.id}
+                      className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-900">{task.title}</h4>
+                        <h4 className="font-medium text-gray-900">
+                          {task.title}
+                        </h4>
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-                            {task.status?.replace(/[-_]/g, ' ').toUpperCase() || 'PENDING'}
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                              task.status
+                            )}`}
+                          >
+                            {task.status?.replace(/[-_]/g, " ").toUpperCase() ||
+                              "PENDING"}
                           </span>
                           {task.priority && (
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(
+                                task.priority
+                              )}`}
+                            >
                               {task.priority.toUpperCase()}
                             </span>
                           )}
                         </div>
                       </div>
-                      <p className="text-gray-600 text-sm mb-2">{task.description}</p>
+                      <p className="text-gray-600 text-sm mb-2">
+                        {task.description}
+                      </p>
                       <div className="flex items-center justify-between text-sm text-gray-500">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center">
                             <ClockIcon className="h-4 w-4 mr-1" />
-                            <span>Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</span>
+                            <span>
+                              Due:{" "}
+                              {task.dueDate
+                                ? new Date(task.dueDate).toLocaleDateString()
+                                : "No due date"}
+                            </span>
                           </div>
                           <div className="flex items-center">
                             <UserGroupIcon className="h-4 w-4 mr-1" />
                             <span>
-                              {task.assignee ? `${task.assignee.firstName} ${task.assignee.lastName}` : 'Unassigned'}
+                              {task.assignee
+                                ? `${task.assignee.firstName} ${task.assignee.lastName}`
+                                : "Unassigned"}
                             </span>
                           </div>
                         </div>
@@ -200,7 +251,9 @@ const ProjectDetails = () => {
                     </div>
                   ))}
                   {(!project.tasks || project.tasks.length === 0) && (
-                    <p className="text-gray-500 text-center py-4">No tasks found for this project</p>
+                    <p className="text-gray-500 text-center py-4">
+                      No tasks found for this project
+                    </p>
                   )}
                 </div>
               </div>
@@ -213,29 +266,42 @@ const ProjectDetails = () => {
                 </h3>
                 <div className="grid grid-cols-1 gap-4">
                   {project.team?.map((member) => (
-                    <div key={member._id || member.id} className="flex items-center space-x-4 p-4 border rounded-lg hover:shadow-md transition-shadow">
+                    <div
+                      key={member._id || member.id}
+                      className="flex items-center space-x-4 p-4 border rounded-lg hover:shadow-md transition-shadow"
+                    >
                       <div className="flex-shrink-0">
                         <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                           <span className="text-gray-600 font-medium">
-                            {member.firstName?.[0]}{member.lastName?.[0]}
+                            {member.firstName?.[0]}
+                            {member.lastName?.[0]}
                           </span>
                         </div>
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{member.name || `${member.firstName} ${member.lastName}`}</p>
+                        <p className="font-medium text-gray-900">
+                          {member.name ||
+                            `${member.firstName} ${member.lastName}`}
+                        </p>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                           <p className="text-sm text-gray-500">
-                            {member.position?.title || member.department?.name || 'Team Member'}
+                            {member.position?.title ||
+                              member.department?.name ||
+                              "Team Member"}
                           </p>
                           {member.email && (
-                            <p className="text-sm text-gray-500">{member.email}</p>
+                            <p className="text-sm text-gray-500">
+                              {member.email}
+                            </p>
                           )}
                         </div>
                       </div>
                     </div>
                   ))}
                   {(!project.team || project.team.length === 0) && (
-                    <p className="text-gray-500 text-center py-4">No team members assigned to this project</p>
+                    <p className="text-gray-500 text-center py-4">
+                      No team members assigned to this project
+                    </p>
                   )}
                 </div>
               </div>
@@ -247,4 +313,4 @@ const ProjectDetails = () => {
   );
 };
 
-export default ProjectDetails; 
+export default ProjectDetails;

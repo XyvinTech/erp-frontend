@@ -1,28 +1,38 @@
-import { Fragment, useEffect, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useForm, Controller } from 'react-hook-form';
-import { useEmployeeStore } from '@/stores/employeeStore';
-import { taskService } from '@/services/task.service';
-import { toast } from 'react-hot-toast';
-import AsyncSelect from 'react-select/async';
+import { Fragment, useEffect, useState } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useForm, Controller } from "react-hook-form";
+import useHrmStore from "@/stores/useHrmStore";
+import { taskService } from "@/api/task.service";
+import { toast } from "react-hot-toast";
+import AsyncSelect from "react-select/async";
 
-const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 'todo' }) => {
-  const { employees, fetchEmployees } = useEmployeeStore();
+const TaskModal = ({
+  isOpen,
+  onClose,
+  projectId,
+  task = null,
+  defaultStatus = "todo",
+}) => {
+  const { employees, fetchEmployees } = useHrmStore();
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const isEditing = !!task;
 
   const defaultValues = {
-    title: task?.title || '',
-    description: task?.description || '',
-    assigneeId: task?.assignee ? {
-      value: task.assignee._id || task.assignee.id,
-      label: `${task.assignee.firstName} ${task.assignee.lastName} (${task.assignee.role})`,
-      role: task.assignee.role
-    } : null,
-    priority: task?.priority || 'medium',
-    dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
-    status: task?.status || defaultStatus
+    title: task?.title || "",
+    description: task?.description || "",
+    assigneeId: task?.assignee
+      ? {
+          value: task.assignee._id || task.assignee.id,
+          label: `${task.assignee.firstName} ${task.assignee.lastName} (${task.assignee.role})`,
+          role: task.assignee.role,
+        }
+      : null,
+    priority: task?.priority || "medium",
+    dueDate: task?.dueDate
+      ? new Date(task.dueDate).toISOString().split("T")[0]
+      : "",
+    status: task?.status || defaultStatus,
   };
 
   const {
@@ -31,9 +41,9 @@ const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 't
     control,
     formState: { errors },
     reset,
-    setValue
+    setValue,
   } = useForm({
-    defaultValues
+    defaultValues,
   });
 
   useEffect(() => {
@@ -45,17 +55,17 @@ const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 't
 
   useEffect(() => {
     if (Array.isArray(employees)) {
-      const options = employees.map(emp => ({
+      const options = employees.map((emp) => ({
         value: emp._id || emp.id,
         label: `${emp.firstName} ${emp.lastName} (${emp.role})`,
-        role: emp.role
+        role: emp.role,
       }));
       setEmployeeOptions(options);
     }
   }, [employees]);
 
   const filterEmployees = (inputValue) => {
-    return employeeOptions.filter(option =>
+    return employeeOptions.filter((option) =>
       option.label.toLowerCase().includes(inputValue.toLowerCase())
     );
   };
@@ -71,22 +81,22 @@ const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 't
   const customStyles = {
     control: (base) => ({
       ...base,
-      borderColor: '#e5e7eb',
-      '&:hover': {
-        borderColor: '#d1d5db'
-      }
+      borderColor: "#e5e7eb",
+      "&:hover": {
+        borderColor: "#d1d5db",
+      },
     }),
     option: (base, { data }) => ({
       ...base,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '2px',
-      '&:after': {
+      display: "flex",
+      flexDirection: "column",
+      gap: "2px",
+      "&:after": {
         content: `'${data.role}'`,
-        fontSize: '0.75rem',
-        color: '#6b7280'
-      }
-    })
+        fontSize: "0.75rem",
+        color: "#6b7280",
+      },
+    }),
   };
 
   const onSubmit = async (data) => {
@@ -95,21 +105,21 @@ const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 't
         ...data,
         assignee: data.assigneeId?.value || null,
         project: projectId,
-        status: defaultStatus
+        status: defaultStatus,
       };
 
       if (isEditing) {
         await taskService.updateTask(task._id, formData);
-        toast.success('Task updated successfully');
+        toast.success("Task updated successfully");
       } else {
         await taskService.createTask(formData);
-        toast.success('Task created successfully');
+        toast.success("Task created successfully");
       }
       reset(defaultValues);
       onClose();
     } catch (error) {
-      console.error('Error submitting task:', error);
-      toast.error(error.message || 'Failed to save task');
+      console.error("Error submitting task:", error);
+      toast.error(error.message || "Failed to save task");
     }
   };
 
@@ -153,40 +163,59 @@ const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 't
 
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                    <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
-                      {isEditing ? 'Edit Task' : 'Create Task'}
+                    <Dialog.Title
+                      as="h3"
+                      className="text-base font-semibold leading-6 text-gray-900"
+                    >
+                      {isEditing ? "Edit Task" : "Create Task"}
                     </Dialog.Title>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+                    <form
+                      onSubmit={handleSubmit(onSubmit)}
+                      className="mt-6 space-y-4"
+                    >
                       <div>
-                        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="title"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Title
                         </label>
                         <input
                           type="text"
                           id="title"
-                          {...register('title', { required: 'Title is required' })}
+                          {...register("title", {
+                            required: "Title is required",
+                          })}
                           className="mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
                         />
                         {errors.title && (
-                          <p className="mt-1 text-xs text-red-600">{errors.title.message}</p>
+                          <p className="mt-1 text-xs text-red-600">
+                            {errors.title.message}
+                          </p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="description"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Description
                         </label>
                         <textarea
                           id="description"
                           rows={3}
-                          {...register('description')}
+                          {...register("description")}
                           className="mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
                         />
                       </div>
 
                       <div>
-                        <label htmlFor="assigneeId" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="assigneeId"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Assignee
                         </label>
                         <Controller
@@ -212,12 +241,15 @@ const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 't
                       </div>
 
                       <div>
-                        <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="priority"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Priority
                         </label>
                         <select
                           id="priority"
-                          {...register('priority')}
+                          {...register("priority")}
                           className="mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
                         >
                           <option value="low">Low</option>
@@ -227,13 +259,16 @@ const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 't
                       </div>
 
                       <div>
-                        <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="dueDate"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Due Date
                         </label>
                         <input
                           type="date"
                           id="dueDate"
-                          {...register('dueDate')}
+                          {...register("dueDate")}
                           className="mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
                         />
                       </div>
@@ -243,7 +278,7 @@ const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 't
                           type="submit"
                           className="inline-flex w-full justify-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 sm:ml-3 sm:w-auto"
                         >
-                          {isEditing ? 'Update Task' : 'Create Task'}
+                          {isEditing ? "Update Task" : "Create Task"}
                         </button>
                         <button
                           type="button"
@@ -265,4 +300,4 @@ const TaskModal = ({ isOpen, onClose, projectId, task = null, defaultStatus = 't
   );
 };
 
-export default TaskModal; 
+export default TaskModal;

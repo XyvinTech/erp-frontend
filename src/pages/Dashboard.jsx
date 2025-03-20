@@ -1,55 +1,55 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from "react";
 import {
   UsersIcon,
   BuildingOfficeIcon,
   BriefcaseIcon,
   ClockIcon,
-} from '@heroicons/react/24/outline';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import useHrmStore from '../store/hrm/useHrmStore';
+} from "@heroicons/react/24/outline";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import useHrmStore from "../stores/useHrmStore";
 
 const Dashboard = () => {
-  const {
-    events,
-    eventsLoading,
-    eventsError,
-    fetchEvents,
-  } = useHrmStore();
+  const { events, eventsLoading, eventsError, fetchEvents } = useHrmStore();
 
   // State for selected month in calendar
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarApi, setCalendarApi] = useState(null);
 
   useEffect(() => {
-    fetchEvents();
+    console.log(events);
+    fetchEvents().catch((err) => {
+      console.error("Error fetching events:", err);
+    });
   }, [fetchEvents]);
 
   // Helper function to get event color based on status
   const getEventColor = useCallback((status) => {
     switch (status?.toLowerCase()) {
-      case 'upcoming':
-        return '#36A2EB';
-      case 'ongoing':
-        return '#FFCE56';
-      case 'completed':
-        return '#4BC0C0';
+      case "upcoming":
+        return "#36A2EB";
+      case "ongoing":
+        return "#FFCE56";
+      case "completed":
+        return "#4BC0C0";
       default:
-        return '#36A2EB';
+        return "#36A2EB";
     }
   }, []);
 
   // Transform events for calendar display
   const calendarEvents = useCallback(() => {
-    return events?.map(event => ({
-      id: event._id,
-      title: event.title,
-      start: event.startDate,
-      end: event.endDate,
-      status: event.status,
-      backgroundColor: getEventColor(event.status),
-      description: event.description
-    })) || [];
+    return (
+      events?.map((event) => ({
+        id: event._id,
+        title: event.title,
+        start: event.startDate,
+        end: event.endDate,
+        status: event.status,
+        backgroundColor: getEventColor(event.status),
+        description: event.description,
+      })) || []
+    );
   }, [events, getEventColor]);
 
   // Filter events for the current month
@@ -57,15 +57,25 @@ const Dashboard = () => {
     if (!events) return [];
 
     // Create date objects for the first and last day of the selected month
-    const monthStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const monthStart = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      1
+    );
     monthStart.setHours(0, 0, 0, 0);
 
-    const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+    const monthEnd = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth() + 1,
+      0
+    );
     monthEnd.setHours(23, 59, 59, 999);
 
     return events.filter((event) => {
       const eventStart = new Date(event.startDate);
-      const eventEnd = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+      const eventEnd = event.endDate
+        ? new Date(event.endDate)
+        : new Date(event.startDate);
 
       // Normalize the time parts to avoid time-of-day comparison issues
       eventStart.setHours(0, 0, 0, 0);
@@ -82,7 +92,7 @@ const Dashboard = () => {
   const handleDatesSet = useCallback((arg) => {
     // Get the displayed date from the calendar
     const displayedDate = new Date(arg.view.currentStart);
-    
+
     // Create a new date object to avoid reference issues
     const newDate = new Date(
       displayedDate.getFullYear(),
@@ -103,32 +113,38 @@ const Dashboard = () => {
 
   const cards = [
     {
-      name: 'Total Events',
+      name: "Total Events",
       value: events?.length || 0,
       icon: UsersIcon,
-      change: '+4.75%',
-      changeType: 'positive',
+      change: "+4.75%",
+      changeType: "positive",
     },
     {
-      name: 'Upcoming Events',
-      value: events?.filter((e) => e.status?.toLowerCase() === 'upcoming')?.length || 0,
+      name: "Upcoming Events",
+      value:
+        events?.filter((e) => e.status?.toLowerCase() === "upcoming")?.length ||
+        0,
       icon: BuildingOfficeIcon,
-      change: '0%',
-      changeType: 'neutral',
+      change: "0%",
+      changeType: "neutral",
     },
     {
-      name: 'Ongoing Events',
-      value: events?.filter((e) => e.status?.toLowerCase() === 'ongoing')?.length || 0,
+      name: "Ongoing Events",
+      value:
+        events?.filter((e) => e.status?.toLowerCase() === "ongoing")?.length ||
+        0,
       icon: BriefcaseIcon,
-      change: '+2.5%',
-      changeType: 'positive',
+      change: "+2.5%",
+      changeType: "positive",
     },
     {
-      name: 'Completed Events',
-      value: events?.filter((e) => e.status?.toLowerCase() === 'completed')?.length || 0,
+      name: "Completed Events",
+      value:
+        events?.filter((e) => e.status?.toLowerCase() === "completed")
+          ?.length || 0,
       icon: ClockIcon,
-      change: '-3%',
-      changeType: 'negative',
+      change: "-3%",
+      changeType: "negative",
     },
   ];
 
@@ -174,11 +190,11 @@ const Dashboard = () => {
               </p>
               <p
                 className={`ml-2 flex items-baseline text-sm font-semibold ${
-                  card.changeType === 'positive'
-                    ? 'text-green-600'
-                    : card.changeType === 'negative'
-                    ? 'text-red-600'
-                    : 'text-gray-500'
+                  card.changeType === "positive"
+                    ? "text-green-600"
+                    : card.changeType === "negative"
+                    ? "text-red-600"
+                    : "text-gray-500"
                 }`}
               >
                 {card.change}
@@ -204,7 +220,9 @@ const Dashboard = () => {
               eventContent={(eventInfo) => (
                 <div className="cursor-pointer">
                   <b>{eventInfo.event.title}</b>
-                  <p className="text-xs">{eventInfo.event.extendedProps.status}</p>
+                  <p className="text-xs">
+                    {eventInfo.event.extendedProps.status}
+                  </p>
                 </div>
               )}
               datesSet={handleDatesSet}
@@ -219,7 +237,7 @@ const Dashboard = () => {
         <div className="rounded-lg bg-white p-6 shadow">
           <h3 className="text-lg font-medium leading-6 text-gray-900">
             Monthly Events (
-            {selectedDate.toLocaleString('default', { month: 'long' })}{' '}
+            {selectedDate.toLocaleString("default", { month: "long" })}{" "}
             {selectedDate.getFullYear()})
           </h3>
           <div className="mt-4 max-h-[400px] overflow-y-auto">
@@ -233,10 +251,13 @@ const Dashboard = () => {
                     <div>
                       <p className="font-semibold">{event.title}</p>
                       <p className="text-sm text-gray-500">
-                        {new Date(event.startDate).toLocaleDateString()} 
-                        {event.endDate && event.endDate !== event.startDate && 
-                          ` - ${new Date(event.endDate).toLocaleDateString()}`
-                        } • {event.status}
+                        {new Date(event.startDate).toLocaleDateString()}
+                        {event.endDate &&
+                          event.endDate !== event.startDate &&
+                          ` - ${new Date(
+                            event.endDate
+                          ).toLocaleDateString()}`}{" "}
+                        • {event.status}
                       </p>
                       {event.description && (
                         <p className="mt-1 text-sm text-gray-600 line-clamp-2">

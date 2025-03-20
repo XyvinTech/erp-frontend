@@ -1,86 +1,87 @@
-import { Fragment, useEffect, useState } from 'react';
-import { Dialog, Transition, Switch } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-hot-toast';
-import useHrmStore from '../../../store/hrm/useHrmStore';
-import useAuthStore from '../../../store/auth.store';
-import authService from '../../../services/auth.service';
-import * as hrmService from '../../../services/hrm/hrmService';
+import { Fragment, useEffect, useState } from "react";
+import { Dialog, Transition, Switch } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { toast } from "react-hot-toast";
+import useHrmStore from "../../../stores/useHrmStore";
+  import useAuthStore from "../../../stores/auth.store";  
 
 const EMPLOYEE_ROLES = [
-  'ERP System Administrator',
-  'IT Manager',
-  'Project Manager',
-  'Business Analyst',
-  'Developer',
-  'Quality Assurance Specialist',
-  'HR Manager',
-  'Finance Manager',
-  'Sales Manager',
-  'Employee'
+  "ERP System Administrator",
+  "IT Manager",
+  "Project Manager",
+  "Business Analyst",
+  "Developer",
+  "Quality Assurance Specialist",
+  "HR Manager",
+  "Finance Manager",
+  "Sales Manager",
+  "Employee",
 ];
 
 const validationSchema = Yup.object({
-  employeeId: Yup.string().required('Employee ID is required'),
-  firstName: Yup.string().required('First name is required'),
-  lastName: Yup.string().required('Last name is required'),
-  email: Yup.string().email('Invalid email').required('Email is required'),
-  password: Yup.string().when('isNewEmployee', {
+  employeeId: Yup.string().required("Employee ID is required"),
+  firstName: Yup.string().required("First name is required"),
+  lastName: Yup.string().required("Last name is required"),
+  email: Yup.string().email("Invalid email").required("Email is required"),
+  password: Yup.string().when("isNewEmployee", {
     is: true,
-    then: () => Yup.string()
-      .min(6, 'Password must be at least 6 characters')
-      .required('Password is required'),
-    otherwise: () => Yup.string()
+    then: () =>
+      Yup.string()
+        .min(6, "Password must be at least 6 characters")
+        .required("Password is required"),
+    otherwise: () => Yup.string(),
   }),
-  phone: Yup.string().required('Phone number is required'),
-  department: Yup.string().required('Department is required'),
-  position: Yup.mixed().required('Position is required'),
-  role: Yup.string().required('Role is required'),
-  joiningDate: Yup.date().required('Joining date is required'),
-  status: Yup.string().required('Status is required'),
+  phone: Yup.string().required("Phone number is required"),
+  department: Yup.string().required("Department is required"),
+  position: Yup.mixed().required("Position is required"),
+  role: Yup.string().required("Role is required"),
+  joiningDate: Yup.date().required("Joining date is required"),
+  status: Yup.string().required("Status is required"),
   salary: Yup.number()
-    .min(0, 'Salary cannot be negative')
-    .required('Salary is required'),
+    .min(0, "Salary cannot be negative")
+    .required("Salary is required"),
 });
 
 const EmployeeModal = ({ employee, onClose, onSuccess }) => {
-  const { departments, positions, fetchDepartments, fetchPositions } = useHrmStore();
+  const { departments, positions, fetchDepartments, fetchPositions, createEmployee, updateEmployee, getNextEmployeeId  } =
+    useHrmStore();
   const { user } = useAuthStore();
-  const currentUser = authService.getCurrentUser();
+  const currentUser = useAuthStore.user;
   const [isLoading, setIsLoading] = useState(false);
 
   // Initialize formik first
   const formik = useFormik({
     initialValues: {
-      employeeId: employee?.employeeId || '',
-      firstName: employee?.firstName || '',
-      lastName: employee?.lastName || '',
-      email: employee?.email || '',
-      password: '',
+      employeeId: employee?.employeeId || "",
+      firstName: employee?.firstName || "",
+      lastName: employee?.lastName || "",
+      email: employee?.email || "",
+      password: "",
       isNewEmployee: !employee,
-      phone: employee?.phone || '',
-      department: employee?.department?._id || employee?.department || '',
-      position: employee?.position?._id || 
-               employee?.position?.id || 
-               (typeof employee?.position === 'string' ? employee.position : ''),
-      role: employee?.role || 'Employee',
+      phone: employee?.phone || "",
+      department: employee?.department?._id || employee?.department || "",
+      position:
+        employee?.position?._id ||
+        employee?.position?.id ||
+        (typeof employee?.position === "string" ? employee.position : ""),
+      role: employee?.role || "Employee",
       joiningDate: employee?.joiningDate
-        ? new Date(employee.joiningDate).toISOString().split('T')[0]
-        : '',
-      status: employee?.status || 'active',
-      salary: employee?.salary || '',
+        ? new Date(employee.joiningDate).toISOString().split("T")[0]
+        : "",
+      status: employee?.status || "active",
+      salary: employee?.salary || "",
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
-        console.log('Form submitted with values:', values);
+        console.log("Form submitted with values:", values);
         setIsLoading(true);
         const userId = user?._id || currentUser?._id;
-        
+
         if (!userId) {
-          toast.error('Authentication required. Please log in again.');
+          toast.error("Authentication required. Please log in again.");
           return;
         }
 
@@ -94,11 +95,11 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
           position: values.position, // This should now always be an ID string
           role: values.role,
           joiningDate: values.joiningDate,
-          status: values.status || 'active',
-          salary: Number(values.salary)
+          status: values.status || "active",
+          salary: Number(values.salary),
         };
 
-        console.log('Sending form data:', formData);
+        console.log("Sending form data:", formData);
 
         if (!employee?.id && !employee?._id) {
           formData.employeeId = values.employeeId;
@@ -109,21 +110,27 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
         let response;
         if (employee?.id || employee?._id) {
           const employeeId = employee.id || employee._id;
-          response = await hrmService.updateEmployee(employeeId, formData);
+          response = await updateEmployee(employeeId, formData);
         } else {
-          response = await hrmService.createEmployee(formData);
+          response = await createEmployee(formData);
         }
 
         if (response) {
-          toast.success(`Employee ${employee ? 'updated' : 'created'} successfully`);
-          if (typeof onSuccess === 'function') {
+          toast.success(
+            `Employee ${employee ? "updated" : "created"} successfully`
+          );
+          if (typeof onSuccess === "function") {
             onSuccess(response);
           }
           onClose();
         }
       } catch (error) {
-        console.error('Form submission error:', error);
-        toast.error(error.response?.data?.message || error.message || 'Something went wrong');
+        console.error("Form submission error:", error);
+        toast.error(
+          error.response?.data?.message ||
+            error.message ||
+            "Something went wrong"
+        );
       } finally {
         setIsLoading(false);
       }
@@ -133,16 +140,13 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('Fetching departments and positions...');
-        await Promise.all([
-          fetchDepartments(),
-          fetchPositions()
-        ]);
-        console.log('Departments after fetch:', departments);
-        console.log('Positions after fetch:', positions);
+        console.log("Fetching departments and positions...");
+        await Promise.all([fetchDepartments(), fetchPositions()]);
+        console.log("Departments after fetch:", departments);
+        console.log("Positions after fetch:", positions);
       } catch (error) {
-        console.error('Error loading data:', error);
-        toast.error('Failed to load departments and positions');
+        console.error("Error loading data:", error);
+        toast.error("Failed to load departments and positions");
       }
     };
 
@@ -151,25 +155,26 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
 
   useEffect(() => {
     const fetchEmployeeId = async () => {
-      if (!employee) { // Only fetch new ID when creating new employee
+      if (!employee) {
+        // Only fetch new ID when creating new employee
         try {
-          console.log('Fetching next employee ID...');
-          const response = await hrmService.getNextEmployeeId();
-          console.log('Response from getNextEmployeeId:', response);
-          
+          console.log("Fetching next employee ID...");
+          const response = await getNextEmployeeId();
+          console.log("Response from getNextEmployeeId:", response);
+
           // Fix the response structure extraction
           const nextId = response?.data?.employee?.employeeId;
-          console.log('Next ID extracted:', nextId);
-          
+          console.log("Next ID extracted:", nextId);
+
           if (nextId) {
-            formik.setFieldValue('employeeId', nextId);
+            formik.setFieldValue("employeeId", nextId);
           } else {
-            console.error('Invalid response structure:', response);
-            toast.error('Failed to generate employee ID');
+            console.error("Invalid response structure:", response);
+            toast.error("Failed to generate employee ID");
           }
         } catch (error) {
-          console.error('Error fetching employee ID:', error);
-          toast.error('Failed to generate employee ID');
+          console.error("Error fetching employee ID:", error);
+          toast.error("Failed to generate employee ID");
         }
       }
     };
@@ -179,17 +184,17 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted, calling formik.handleSubmit');
-    console.log('Current form values:', formik.values);
-    
+    console.log("Form submitted, calling formik.handleSubmit");
+    console.log("Current form values:", formik.values);
+
     // Validate form before submission
     const errors = await formik.validateForm();
     if (Object.keys(errors).length === 0) {
       formik.handleSubmit(e);
     } else {
-      console.error('Form validation errors:', errors);
+      console.error("Form validation errors:", errors);
       // Show all validation errors to the user
-      const errorMessages = Object.values(errors).join(', ');
+      const errorMessages = Object.values(errors).join(", ");
       toast.error(`Please fix the following errors: ${errorMessages}`);
     }
   };
@@ -238,7 +243,7 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                       as="h3"
                       className="text-lg font-semibold leading-6 text-gray-900"
                     >
-                      {employee ? 'Edit Employee' : 'Add Employee'}
+                      {employee ? "Edit Employee" : "Add Employee"}
                     </Dialog.Title>
 
                     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -252,13 +257,16 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="employeeId"
                             name="employeeId"
                             className="input"
-                            {...formik.getFieldProps('employeeId')}
+                            {...formik.getFieldProps("employeeId")}
                             readOnly
                             disabled
                           />
-                          {formik.touched.employeeId && formik.errors.employeeId && (
-                            <div className="error-message">{formik.errors.employeeId}</div>
-                          )}
+                          {formik.touched.employeeId &&
+                            formik.errors.employeeId && (
+                              <div className="error-message">
+                                {formik.errors.employeeId}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -270,11 +278,14 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="firstName"
                             name="firstName"
                             className="input"
-                            {...formik.getFieldProps('firstName')}
+                            {...formik.getFieldProps("firstName")}
                           />
-                          {formik.touched.firstName && formik.errors.firstName && (
-                            <div className="error-message">{formik.errors.firstName}</div>
-                          )}
+                          {formik.touched.firstName &&
+                            formik.errors.firstName && (
+                              <div className="error-message">
+                                {formik.errors.firstName}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -286,11 +297,14 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="lastName"
                             name="lastName"
                             className="input"
-                            {...formik.getFieldProps('lastName')}
+                            {...formik.getFieldProps("lastName")}
                           />
-                          {formik.touched.lastName && formik.errors.lastName && (
-                            <div className="error-message">{formik.errors.lastName}</div>
-                          )}
+                          {formik.touched.lastName &&
+                            formik.errors.lastName && (
+                              <div className="error-message">
+                                {formik.errors.lastName}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -302,10 +316,12 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="email"
                             name="email"
                             className="input"
-                            {...formik.getFieldProps('email')}
+                            {...formik.getFieldProps("email")}
                           />
                           {formik.touched.email && formik.errors.email && (
-                            <div className="error-message">{formik.errors.email}</div>
+                            <div className="error-message">
+                              {formik.errors.email}
+                            </div>
                           )}
                         </div>
 
@@ -319,11 +335,14 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                               id="password"
                               name="password"
                               className="input"
-                              {...formik.getFieldProps('password')}
+                              {...formik.getFieldProps("password")}
                             />
-                            {formik.touched.password && formik.errors.password && (
-                              <div className="error-message">{formik.errors.password}</div>
-                            )}
+                            {formik.touched.password &&
+                              formik.errors.password && (
+                                <div className="error-message">
+                                  {formik.errors.password}
+                                </div>
+                              )}
                           </div>
                         )}
 
@@ -336,10 +355,12 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="phone"
                             name="phone"
                             className="input"
-                            {...formik.getFieldProps('phone')}
+                            {...formik.getFieldProps("phone")}
                           />
                           {formik.touched.phone && formik.errors.phone && (
-                            <div className="error-message">{formik.errors.phone}</div>
+                            <div className="error-message">
+                              {formik.errors.phone}
+                            </div>
                           )}
                         </div>
 
@@ -351,7 +372,7 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="role"
                             name="role"
                             className="input"
-                            {...formik.getFieldProps('role')}
+                            {...formik.getFieldProps("role")}
                           >
                             {EMPLOYEE_ROLES.map((role) => (
                               <option key={role} value={role}>
@@ -360,7 +381,9 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             ))}
                           </select>
                           {formik.touched.role && formik.errors.role && (
-                            <div className="error-message">{formik.errors.role}</div>
+                            <div className="error-message">
+                              {formik.errors.role}
+                            </div>
                           )}
                         </div>
 
@@ -372,18 +395,25 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="department"
                             name="department"
                             className="input"
-                            {...formik.getFieldProps('department')}
+                            {...formik.getFieldProps("department")}
                           >
                             <option value="">Select Department</option>
-                            {departments && departments.map((dept) => (
-                              <option key={dept._id || dept.id} value={dept._id || dept.id}>
-                                {dept.name}
-                              </option>
-                            ))}
+                            {departments &&
+                              departments.map((dept) => (
+                                <option
+                                  key={dept._id || dept.id}
+                                  value={dept._id || dept.id}
+                                >
+                                  {dept.name}
+                                </option>
+                              ))}
                           </select>
-                          {formik.touched.department && formik.errors.department && (
-                            <div className="error-message">{formik.errors.department}</div>
-                          )}
+                          {formik.touched.department &&
+                            formik.errors.department && (
+                              <div className="error-message">
+                                {formik.errors.department}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -394,28 +424,29 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="position"
                             name="position"
                             className="input"
-                            value={formik.values.position || ''}
+                            value={formik.values.position || ""}
                             onChange={(e) => {
-                              formik.setFieldValue('position', e.target.value);
+                              formik.setFieldValue("position", e.target.value);
                             }}
                             onBlur={formik.handleBlur}
                           >
                             <option value="">Select Position</option>
-                            {positions && positions.map((position) => {
-                              const positionId = position._id || position.id;
-                              return (
-                                <option 
-                                  key={positionId}
-                                  value={positionId}
-                                >
-                                  {position.title}
-                                </option>
-                              );
-                            })}
+                            {positions &&
+                              positions.map((position) => {
+                                const positionId = position._id || position.id;
+                                return (
+                                  <option key={positionId} value={positionId}>
+                                    {position.title}
+                                  </option>
+                                );
+                              })}
                           </select>
-                          {formik.touched.position && formik.errors.position && (
-                            <div className="error-message">{formik.errors.position}</div>
-                          )}
+                          {formik.touched.position &&
+                            formik.errors.position && (
+                              <div className="error-message">
+                                {formik.errors.position}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -427,11 +458,14 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="joiningDate"
                             name="joiningDate"
                             className="input"
-                            {...formik.getFieldProps('joiningDate')}
+                            {...formik.getFieldProps("joiningDate")}
                           />
-                          {formik.touched.joiningDate && formik.errors.joiningDate && (
-                            <div className="error-message">{formik.errors.joiningDate}</div>
-                          )}
+                          {formik.touched.joiningDate &&
+                            formik.errors.joiningDate && (
+                              <div className="error-message">
+                                {formik.errors.joiningDate}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -440,27 +474,38 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                           </label>
                           <div className="flex items-center space-x-3">
                             <Switch
-                              checked={formik.values.status === 'active'}
+                              checked={formik.values.status === "active"}
                               onChange={(checked) => {
-                                formik.setFieldValue('status', checked ? 'active' : 'inactive');
+                                formik.setFieldValue(
+                                  "status",
+                                  checked ? "active" : "inactive"
+                                );
                               }}
                               className={`${
-                                formik.values.status === 'active' ? 'bg-black' : 'bg-gray-200'
+                                formik.values.status === "active"
+                                  ? "bg-black"
+                                  : "bg-gray-200"
                               } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2`}
                             >
                               <span className="sr-only">Enable status</span>
                               <span
                                 className={`${
-                                  formik.values.status === 'active' ? 'translate-x-6' : 'translate-x-1'
+                                  formik.values.status === "active"
+                                    ? "translate-x-6"
+                                    : "translate-x-1"
                                 } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
                               />
                             </Switch>
                             <span className="text-sm text-gray-600">
-                              {formik.values.status === 'active' ? 'Active' : 'Inactive'}
+                              {formik.values.status === "active"
+                                ? "Active"
+                                : "Inactive"}
                             </span>
                           </div>
                           {formik.touched.status && formik.errors.status && (
-                            <div className="error-message">{formik.errors.status}</div>
+                            <div className="error-message">
+                              {formik.errors.status}
+                            </div>
                           )}
                         </div>
 
@@ -473,10 +518,12 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             id="salary"
                             name="salary"
                             className="input"
-                            {...formik.getFieldProps('salary')}
+                            {...formik.getFieldProps("salary")}
                           />
                           {formik.touched.salary && formik.errors.salary && (
-                            <div className="error-message">{formik.errors.salary}</div>
+                            <div className="error-message">
+                              {formik.errors.salary}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -486,10 +533,14 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                           type="submit"
                           disabled={isLoading}
                           className={`inline-flex w-full justify-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 sm:ml-3 sm:w-auto ${
-                            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                            isLoading ? "opacity-50 cursor-not-allowed" : ""
                           }`}
                         >
-                          {isLoading ? 'Processing...' : employee ? 'Update' : 'Create'}
+                          {isLoading
+                            ? "Processing..."
+                            : employee
+                            ? "Update"
+                            : "Create"}
                         </button>
                         <button
                           type="button"
@@ -511,4 +562,4 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
   );
 };
 
-export default EmployeeModal; 
+export default EmployeeModal;

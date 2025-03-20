@@ -1,37 +1,45 @@
-import { Fragment, useEffect } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-hot-toast';
-import * as hrmService from '../../../services/hrm/hrmService';
+import { Fragment, useEffect } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { toast } from "react-hot-toast";
+import useHrmStore from "@/stores/useHrmStore";
 
 const validationSchema = Yup.object({
-  leaveType: Yup.string().required('Leave type is required'),
-  startDate: Yup.date().required('Start date is required'),
+  leaveType: Yup.string().required("Leave type is required"),
+  startDate: Yup.date().required("Start date is required"),
   endDate: Yup.date()
-    .min(Yup.ref('startDate'), 'End date must be after start date')
-    .required('End date is required'),
-  reason: Yup.string().required('Reason is required'),
+    .min(Yup.ref("startDate"), "End date must be after start date")
+    .required("End date is required"),
+  reason: Yup.string().required("Reason is required"),
   attachment: Yup.mixed(),
-  status: Yup.string().required('Status is required'),
-  reviewNotes: Yup.string().when('status', {
-    is: (status) => status === 'Approved' || status === 'Rejected',
-    then: () => Yup.string().required('Review notes are required when approving or rejecting'),
+  status: Yup.string().required("Status is required"),
+  reviewNotes: Yup.string().when("status", {
+    is: (status) => status === "Approved" || status === "Rejected",
+    then: () =>
+      Yup.string().required(
+        "Review notes are required when approving or rejecting"
+      ),
     otherwise: () => Yup.string(),
   }),
 });
 
 const LeaveModal = ({ leave, onClose, onSuccess }) => {
+  const { createLeave, updateLeave, reviewLeave } = useHrmStore();
   const formik = useFormik({
     initialValues: {
-      leaveType: leave?.leaveType || '',
-      startDate: leave?.startDate ? new Date(leave.startDate).toISOString().split('T')[0] : '',
-      endDate: leave?.endDate ? new Date(leave.endDate).toISOString().split('T')[0] : '',
-      reason: leave?.reason || '',
-      status: leave?.status || 'Pending',
+      leaveType: leave?.leaveType || "",
+      startDate: leave?.startDate
+        ? new Date(leave.startDate).toISOString().split("T")[0]
+        : "",
+      endDate: leave?.endDate
+        ? new Date(leave.endDate).toISOString().split("T")[0]
+        : "",
+      reason: leave?.reason || "",
+      status: leave?.status || "Pending",
       duration: leave?.duration || 0,
-      reviewNotes: leave?.reviewNotes || '',
+      reviewNotes: leave?.reviewNotes || "",
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -46,29 +54,35 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
         // Calculate duration in days
         const start = new Date(values.startDate);
         const end = new Date(values.endDate);
-        const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-        formData.append('duration', durationInDays);
+        const durationInDays =
+          Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        formData.append("duration", durationInDays);
 
         if (leave) {
           // If status is being changed to Approved or Rejected, use reviewLeave
-          if (values.status !== leave.status && (values.status === 'Approved' || values.status === 'Rejected')) {
-            await hrmService.reviewLeave(leave._id, {
+          if (
+            values.status !== leave.status &&
+            (values.status === "Approved" || values.status === "Rejected")
+          ) {
+            await reviewLeave(leave._id, {
               status: values.status,
-              reviewNotes: values.reviewNotes
+              reviewNotes: values.reviewNotes,
             });
-            toast.success(`Leave request ${values.status.toLowerCase()} successfully`);
+            toast.success(
+              `Leave request ${values.status.toLowerCase()} successfully`
+            );
           } else {
             // For other updates, use updateLeave
-            await hrmService.updateLeave(leave._id, formData);
-            toast.success('Leave request updated successfully');
+            await updateLeave(leave._id, formData);
+            toast.success("Leave request updated successfully");
           }
         } else {
-          await hrmService.createLeave(formData);
-          toast.success('Leave request submitted successfully');
+          await createLeave(formData);
+          toast.success("Leave request submitted successfully");
         }
         onSuccess();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Something went wrong');
+        toast.error(error.response?.data?.message || "Something went wrong");
       }
     },
   });
@@ -78,8 +92,9 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
     if (formik.values.startDate && formik.values.endDate) {
       const start = new Date(formik.values.startDate);
       const end = new Date(formik.values.endDate);
-      const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-      formik.setFieldValue('duration', durationInDays);
+      const durationInDays =
+        Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      formik.setFieldValue("duration", durationInDays);
     }
   }, [formik.values.startDate, formik.values.endDate]);
 
@@ -127,10 +142,13 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                       as="h3"
                       className="text-lg font-semibold leading-6 text-gray-900"
                     >
-                      {leave ? 'Edit Leave Request' : 'Submit Leave Request'}
+                      {leave ? "Edit Leave Request" : "Submit Leave Request"}
                     </Dialog.Title>
 
-                    <form onSubmit={formik.handleSubmit} className="mt-6 space-y-4">
+                    <form
+                      onSubmit={formik.handleSubmit}
+                      className="mt-6 space-y-4"
+                    >
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label htmlFor="leaveType" className="label">
@@ -139,7 +157,7 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                           <select
                             id="leaveType"
                             className="input"
-                            {...formik.getFieldProps('leaveType')}
+                            {...formik.getFieldProps("leaveType")}
                           >
                             <option value="">Select Type</option>
                             <option value="Annual">Annual Leave</option>
@@ -149,9 +167,12 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                             <option value="Paternity">Paternity Leave</option>
                             <option value="Unpaid">Unpaid Leave</option>
                           </select>
-                          {formik.touched.leaveType && formik.errors.leaveType && (
-                            <div className="error-message">{formik.errors.leaveType}</div>
-                          )}
+                          {formik.touched.leaveType &&
+                            formik.errors.leaveType && (
+                              <div className="error-message">
+                                {formik.errors.leaveType}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -161,14 +182,16 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                           <select
                             id="status"
                             className="input"
-                            {...formik.getFieldProps('status')}
+                            {...formik.getFieldProps("status")}
                           >
                             <option value="Pending">Pending</option>
                             <option value="Approved">Approved</option>
                             <option value="Rejected">Rejected</option>
                           </select>
                           {formik.touched.status && formik.errors.status && (
-                            <div className="error-message">{formik.errors.status}</div>
+                            <div className="error-message">
+                              {formik.errors.status}
+                            </div>
                           )}
                         </div>
 
@@ -180,11 +203,14 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                             type="date"
                             id="startDate"
                             className="input"
-                            {...formik.getFieldProps('startDate')}
+                            {...formik.getFieldProps("startDate")}
                           />
-                          {formik.touched.startDate && formik.errors.startDate && (
-                            <div className="error-message">{formik.errors.startDate}</div>
-                          )}
+                          {formik.touched.startDate &&
+                            formik.errors.startDate && (
+                              <div className="error-message">
+                                {formik.errors.startDate}
+                              </div>
+                            )}
                         </div>
 
                         <div>
@@ -195,10 +221,12 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                             type="date"
                             id="endDate"
                             className="input"
-                            {...formik.getFieldProps('endDate')}
+                            {...formik.getFieldProps("endDate")}
                           />
                           {formik.touched.endDate && formik.errors.endDate && (
-                            <div className="error-message">{formik.errors.endDate}</div>
+                            <div className="error-message">
+                              {formik.errors.endDate}
+                            </div>
                           )}
                         </div>
 
@@ -223,14 +251,17 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                             id="reason"
                             rows={3}
                             className="input"
-                            {...formik.getFieldProps('reason')}
+                            {...formik.getFieldProps("reason")}
                           />
                           {formik.touched.reason && formik.errors.reason && (
-                            <div className="error-message">{formik.errors.reason}</div>
+                            <div className="error-message">
+                              {formik.errors.reason}
+                            </div>
                           )}
                         </div>
 
-                        {(formik.values.status === 'Approved' || formik.values.status === 'Rejected') && (
+                        {(formik.values.status === "Approved" ||
+                          formik.values.status === "Rejected") && (
                           <div className="col-span-2">
                             <label htmlFor="reviewNotes" className="label">
                               Review Notes
@@ -239,12 +270,15 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                               id="reviewNotes"
                               rows={3}
                               className="input"
-                              {...formik.getFieldProps('reviewNotes')}
+                              {...formik.getFieldProps("reviewNotes")}
                               placeholder={`Enter your ${formik.values.status.toLowerCase()} notes...`}
                             />
-                            {formik.touched.reviewNotes && formik.errors.reviewNotes && (
-                              <div className="error-message">{formik.errors.reviewNotes}</div>
-                            )}
+                            {formik.touched.reviewNotes &&
+                              formik.errors.reviewNotes && (
+                                <div className="error-message">
+                                  {formik.errors.reviewNotes}
+                                </div>
+                              )}
                           </div>
                         )}
 
@@ -258,16 +292,17 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                             className="input"
                             onChange={(event) => {
                               formik.setFieldValue(
-                                'attachment',
+                                "attachment",
                                 event.currentTarget.files[0]
                               );
                             }}
                           />
-                          {formik.touched.attachment && formik.errors.attachment && (
-                            <div className="error-message">
-                              {formik.errors.attachment}
-                            </div>
-                          )}
+                          {formik.touched.attachment &&
+                            formik.errors.attachment && (
+                              <div className="error-message">
+                                {formik.errors.attachment}
+                              </div>
+                            )}
                         </div>
                       </div>
 
@@ -280,9 +315,9 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
                           {formik.isSubmitting ? (
                             <div className="spinner border-2 h-5 w-5" />
                           ) : leave ? (
-                            'Update'
+                            "Update"
                           ) : (
-                            'Submit'
+                            "Submit"
                           )}
                         </button>
                         <button
@@ -305,4 +340,4 @@ const LeaveModal = ({ leave, onClose, onSuccess }) => {
   );
 };
 
-export default LeaveModal; 
+export default LeaveModal;

@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useTable, useSortBy, usePagination } from 'react-table';
-import { toast } from 'react-hot-toast';
+import { useEffect, useState, useMemo } from "react";
+import { useTable, useSortBy, usePagination } from "react-table";
+import { toast } from "react-hot-toast";
 import {
   PlusIcon,
   PencilIcon,
@@ -12,17 +12,19 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ClockIcon,
-} from '@heroicons/react/24/outline';
-import useHrmStore from '../../store/hrm/useHrmStore';
-import * as hrmService from '../../services/hrm/hrmService';
-import LeaveModal from '../../components/modules/hrm/LeaveModal';
-import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
+} from "@heroicons/react/24/outline";
+import useHrmStore from "../../stores/useHrmStore";
+import LeaveModal from "../../components/modules/hrm/LeaveModal";
+import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 
 const Leave = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
-  const { leaves, leavesLoading, leavesError, fetchLeaves } = useHrmStore();
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, leave: null });
+  const { leaves, leavesLoading, leavesError, fetchLeaves, deleteLeave } = useHrmStore();
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    leave: null,
+  });
 
   useEffect(() => {
     fetchLeaves();
@@ -30,71 +32,82 @@ const Leave = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Approved':
+      case "Approved":
         return <CheckCircleIcon className="h-5 w-5 text-green-600" />;
-      case 'Rejected':
+      case "Rejected":
         return <XCircleIcon className="h-5 w-5 text-red-600" />;
-      case 'Pending':
+      case "Pending":
         return <ClockIcon className="h-5 w-5 text-yellow-600" />;
       default:
         return <ClockIcon className="h-5 w-5 text-yellow-600" />;
     }
   };
-  
+
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Approved':
-        return 'bg-green-100 text-green-800';
-      case 'Rejected':
-        return 'bg-red-100 text-red-800';
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
+      case "Approved":
+        return "bg-green-100 text-green-800";
+      case "Rejected":
+        return "bg-red-100 text-red-800";
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const columns = useMemo(
     () => [
       {
-        Header: 'Employee',
+        Header: "Employee",
         accessor: (row) => {
-          if (!row.employee) return 'N/A';
-          return `${row.employee.firstName || ''} ${row.employee.lastName || ''}`.trim() || 'N/A';
+          if (!row.employee) return "N/A";
+          return (
+            `${row.employee.firstName || ""} ${
+              row.employee.lastName || ""
+            }`.trim() || "N/A"
+          );
         },
       },
       {
-        Header: 'Type',
-        accessor: 'type',
-        Cell: ({ value }) => value?.charAt(0).toUpperCase() + value?.slice(1) || 'N/A',
+        Header: "Type",
+        accessor: "type",
+        Cell: ({ value }) =>
+          value?.charAt(0).toUpperCase() + value?.slice(1) || "N/A",
       },
       {
-        Header: 'Start Date',
-        accessor: 'startDate',
-        Cell: ({ value }) => value ? new Date(value).toLocaleDateString() : 'N/A',
+        Header: "Start Date",
+        accessor: "startDate",
+        Cell: ({ value }) =>
+          value ? new Date(value).toLocaleDateString() : "N/A",
       },
       {
-        Header: 'End Date',
-        accessor: 'endDate',
-        Cell: ({ value }) => value ? new Date(value).toLocaleDateString() : 'N/A',
+        Header: "End Date",
+        accessor: "endDate",
+        Cell: ({ value }) =>
+          value ? new Date(value).toLocaleDateString() : "N/A",
       },
       {
-        Header: 'Days',
-        accessor: 'days',
-        Cell: ({ value }) => value || 'N/A',
+        Header: "Days",
+        accessor: "days",
+        Cell: ({ value }) => value || "N/A",
       },
       {
-        Header: 'Status',
-        accessor: 'status',
+        Header: "Status",
+        accessor: "status",
         Cell: ({ value }) => (
-          <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(value)}`}>
+          <div
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
+              value
+            )}`}
+          >
             {getStatusIcon(value)}
             <span className="ml-1">{value}</span>
           </div>
         ),
       },
       {
-        Header: 'Actions',
+        Header: "Actions",
         Cell: ({ row }) => (
           <div className="flex space-x-2">
             <button
@@ -118,14 +131,14 @@ const Leave = () => {
 
   const data = useMemo(() => {
     if (!Array.isArray(leaves)) return [];
-    return leaves.map(leave => ({
+    return leaves.map((leave) => ({
       ...leave,
       employee: leave.employee || null,
-      type: leave.leaveType || '',
+      type: leave.leaveType || "",
       startDate: leave.startDate || null,
       endDate: leave.endDate || null,
       days: leave.duration || 0,
-      status: leave.status || 'pending'
+      status: leave.status || "pending",
     }));
   }, [leaves]);
 
@@ -165,13 +178,15 @@ const Leave = () => {
 
   const handleDelete = async (id) => {
     // if (window.confirm('Are you sure you want to delete this leave request?')) {
-      try {
-        await hrmService.deleteLeave(id);
-        toast.success('Leave request deleted successfully');
-        fetchLeaves();
-      } catch (error) {
-        toast.error(error.response?.data?.message || 'Failed to delete leave request');
-      }
+    try {
+      await deleteLeave(id);
+      toast.success("Leave request deleted successfully");
+      fetchLeaves();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to delete leave request"
+      );
+    }
     // }
   };
 
@@ -209,14 +224,20 @@ const Leave = () => {
 
       <div className="overflow-x-auto">
         <div className="inline-block min-w-full align-middle">
-          <table className="min-w-full divide-y divide-gray-300" {...getTableProps()}>
+          <table
+            className="min-w-full divide-y divide-gray-300"
+            {...getTableProps()}
+          >
             <thead>
-              {headerGroups.map(headerGroup => {
-                const { key, ...headerGroupProps } = headerGroup.getHeaderGroupProps();
+              {headerGroups.map((headerGroup) => {
+                const { key, ...headerGroupProps } =
+                  headerGroup.getHeaderGroupProps();
                 return (
                   <tr key={key} {...headerGroupProps}>
-                    {headerGroup.headers.map(column => {
-                      const { key, ...columnProps } = column.getHeaderProps(column.getSortByToggleProps());
+                    {headerGroup.headers.map((column) => {
+                      const { key, ...columnProps } = column.getHeaderProps(
+                        column.getSortByToggleProps()
+                      );
                       return (
                         <th
                           key={key}
@@ -224,7 +245,7 @@ const Leave = () => {
                           className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                         >
                           <div className="group inline-flex">
-                            {column.render('Header')}
+                            {column.render("Header")}
                             <span className="ml-2 flex-none rounded">
                               {column.isSorted ? (
                                 column.isSortedDesc ? (
@@ -242,13 +263,16 @@ const Leave = () => {
                 );
               })}
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white" {...getTableBodyProps()}>
-              {page.map(row => {
+            <tbody
+              className="divide-y divide-gray-200 bg-white"
+              {...getTableBodyProps()}
+            >
+              {page.map((row) => {
                 prepareRow(row);
                 const { key, ...rowProps } = row.getRowProps();
                 return (
                   <tr key={key} {...rowProps}>
-                    {row.cells.map(cell => {
+                    {row.cells.map((cell) => {
                       const { key, ...cellProps } = cell.getCellProps();
                       return (
                         <td
@@ -256,7 +280,7 @@ const Leave = () => {
                           {...cellProps}
                           className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
                         >
-                          {cell.render('Cell')}
+                          {cell.render("Cell")}
                         </td>
                       );
                     })}
@@ -289,9 +313,8 @@ const Leave = () => {
         <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-gray-700">
-              Showing page{' '}
-              <span className="font-medium">{pageIndex + 1}</span> of{' '}
-              <span className="font-medium">{pageOptions.length}</span>
+              Showing page <span className="font-medium">{pageIndex + 1}</span>{" "}
+              of <span className="font-medium">{pageOptions.length}</span>
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -323,12 +346,11 @@ const Leave = () => {
           handleDelete(deleteModal.leaveId);
           setDeleteModal({ isOpen: false, leaveId: null });
         }}
-
         title="Delete Leave Request"
         message="Are you sure you want to delete this leave request? This action cannot be undone."
         itemName="leave request"
       />
-      
+
       {showModal && (
         <LeaveModal
           leave={selectedLeave}

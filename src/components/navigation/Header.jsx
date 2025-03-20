@@ -1,17 +1,21 @@
-import { Fragment } from 'react';
-import { Menu, Transition } from '@headlessui/react';
-import { Bars3Icon, BellIcon, UserCircleIcon } from '@heroicons/react/24/outline';
-import { useNavigate } from 'react-router-dom';
-import authService from '../../services/auth.service';
-import { useEffect, useState } from 'react';
+import { Fragment } from "react";
+import { Menu, Transition } from "@headlessui/react";
+import {
+  Bars3Icon,
+  BellIcon,
+  UserCircleIcon,
+} from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
+import useAuthStore from "@/stores/auth.store";
+import { useEffect, useState } from "react";
 
 const userNavigation = [
-  { name: 'Your Profile', href: '/employee/profile' },
-  { name: 'Settings', href: '/settings' },
+  { name: "Your Profile", href: "/employee/profile" },
+  { name: "Settings", href: "/settings" },
 ];
 
 function classNames(...classes) {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 }
 
 const Header = ({ onMenuClick }) => {
@@ -19,19 +23,19 @@ const Header = ({ onMenuClick }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
+    const currentUser = useAuthStore.user;
     setUser(currentUser);
   }, []);
 
   // Get display name from user object
   const getDisplayName = () => {
-    if (!user) return 'User';
-    return user.username || user.email?.split('@')[0] || 'User';
+    if (!user) return "User";
+    return user.username || user.email?.split("@")[0] || "User";
   };
 
   const handleLogout = () => {
-    authService.logout();
-    navigate('/login');
+    useAuthStore.logout();
+    navigate("/login");
   };
 
   return (
@@ -81,7 +85,7 @@ const Header = ({ onMenuClick }) => {
                   {getDisplayName()}
                 </span>
                 <span className="ml-2 text-sm text-gray-600">
-                  ({user?.role || 'user'})
+                  ({user?.role || "user"})
                 </span>
               </span>
             </Menu.Button>
@@ -101,8 +105,8 @@ const Header = ({ onMenuClick }) => {
                       <a
                         href={item.href}
                         className={classNames(
-                          active ? 'bg-gray-50' : '',
-                          'block px-3 py-1 text-sm leading-6 text-gray-900'
+                          active ? "bg-gray-50" : "",
+                          "block px-3 py-1 text-sm leading-6 text-gray-900"
                         )}
                       >
                         {item.name}
@@ -115,8 +119,8 @@ const Header = ({ onMenuClick }) => {
                     <button
                       onClick={handleLogout}
                       className={classNames(
-                        active ? 'bg-gray-50' : '',
-                        'block w-full px-3 py-1 text-left text-sm leading-6 text-gray-900'
+                        active ? "bg-gray-50" : "",
+                        "block w-full px-3 py-1 text-left text-sm leading-6 text-gray-900"
                       )}
                     >
                       Sign out
@@ -132,4 +136,4 @@ const Header = ({ onMenuClick }) => {
   );
 };
 
-export default Header; 
+export default Header;

@@ -1,15 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { CameraIcon, PencilIcon } from '@heroicons/react/24/outline';
-import authService from '@/services/auth.service';
-import { toast } from 'react-hot-toast';
-import { getMyAttendance } from '@/services/hrm/hrmService';
+import React, { useState, useRef, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { CameraIcon, PencilIcon } from "@heroicons/react/24/outline";
+import useAuthStore from "@/stores/auth.store";
+import { toast } from "react-hot-toast";
+import useHrmStore from "@/stores/useHrmStore";
 
 const Profile = () => {
-  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser());
-  const [profilePicUrl, setProfilePicUrl] = useState('/assets/images/default-avatar.png');
+  const { user } = useAuthStore();
+  const { getMyAttendance, updateProfile, updateProfilePicture } =
+    useHrmStore();
+
+  const [currentUser, setCurrentUser] = useState(user);
+  const [profilePicUrl, setProfilePicUrl] = useState(
+    "/assets/images/default-avatar.png"
+  );
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -18,18 +24,18 @@ const Profile = () => {
     absent: 0,
     total: 0,
     percentage: 0,
-    leaveCount: 0
+    leaveCount: 0,
   });
   const [formData, setFormData] = useState({
-    firstName: currentUser?.firstName || '',
-    lastName: currentUser?.lastName || '',
-    email: currentUser?.email || '',
-    phone: currentUser?.phone || '',
+    firstName: currentUser?.firstName || "",
+    lastName: currentUser?.lastName || "",
+    email: currentUser?.email || "",
+    phone: currentUser?.phone || "",
     emergencyContact: {
-      name: currentUser?.emergencyContact?.name || '',
-      relationship: currentUser?.emergencyContact?.relationship || '',
-      phone: currentUser?.emergencyContact?.phone || '',
-      email: currentUser?.emergencyContact?.email || '',
+      name: currentUser?.emergencyContact?.name || "",
+      relationship: currentUser?.emergencyContact?.relationship || "",
+      phone: currentUser?.emergencyContact?.phone || "",
+      email: currentUser?.emergencyContact?.email || "",
     },
   });
 
@@ -39,15 +45,15 @@ const Profile = () => {
 
   useEffect(() => {
     setFormData({
-      firstName: currentUser?.firstName || '',
-      lastName: currentUser?.lastName || '',
-      email: currentUser?.email || '',
-      phone: currentUser?.phone || '',
+      firstName: currentUser?.firstName || "",
+      lastName: currentUser?.lastName || "",
+      email: currentUser?.email || "",
+      phone: currentUser?.phone || "",
       emergencyContact: {
-        name: currentUser?.emergencyContact?.name || '',
-        relationship: currentUser?.emergencyContact?.relationship || '',
-        phone: currentUser?.emergencyContact?.phone || '',
-        email: currentUser?.emergencyContact?.email || '',
+        name: currentUser?.emergencyContact?.name || "",
+        relationship: currentUser?.emergencyContact?.relationship || "",
+        phone: currentUser?.emergencyContact?.phone || "",
+        email: currentUser?.emergencyContact?.email || "",
       },
     });
   }, [currentUser]);
@@ -56,15 +62,15 @@ const Profile = () => {
     const picturePath = currentUser?.profilePicture;
     if (picturePath) {
       // If it's already a full URL, use it as is
-      if (picturePath.startsWith('http')) {
+      if (picturePath.startsWith("http")) {
         setProfilePicUrl(picturePath);
       } else {
         // Remove any leading slashes and construct the full URL
-        const cleanPath = picturePath.replace(/^\/+/, '');
+        const cleanPath = picturePath.replace(/^\/+/, "");
         setProfilePicUrl(`${import.meta.env.VITE_API_URL}/${cleanPath}`);
       }
     } else {
-      setProfilePicUrl('/assets/images/default-avatar.png');
+      setProfilePicUrl("/assets/images/default-avatar.png");
     }
   }, [currentUser]);
 
@@ -77,48 +83,66 @@ const Profile = () => {
 
       // Get the current date as end date
       const endDate = new Date();
-      
-      const response = await getMyAttendance({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      });
+
+      const response = await getMyAttendance(startDate, endDate);
 
       if (response?.data?.attendance) {
         const attendance = response.data.attendance;
-        
+
         // Calculate different attendance types
-        const presentDays = attendance.filter(a => a.status === 'Present').length;
-        const leaveDays = attendance.filter(a => 
-          a.status === 'On-Leave' || 
-          (a.isLeave === true && ['Annual', 'Sick', 'Personal', 'Maternity', 'Paternity', 'Unpaid'].includes(a.leaveType))
+        const presentDays = attendance.filter(
+          (a) => a.status === "Present"
         ).length;
-        const absentDays = attendance.filter(a => a.status === 'Absent').length;
-        const halfDays = attendance.filter(a => a.status === 'Half-Day').length;
-        const lateDays = attendance.filter(a => a.status === 'Late').length;
-        const earlyLeaveDays = attendance.filter(a => a.status === 'Early-Leave').length;
+        const leaveDays = attendance.filter(
+          (a) =>
+            a.status === "On-Leave" ||
+            (a.isLeave === true &&
+              [
+                "Annual",
+                "Sick",
+                "Personal",
+                "Maternity",
+                "Paternity",
+                "Unpaid",
+              ].includes(a.leaveType))
+        ).length;
+        const absentDays = attendance.filter(
+          (a) => a.status === "Absent"
+        ).length;
+        const halfDays = attendance.filter(
+          (a) => a.status === "Half-Day"
+        ).length;
+        const lateDays = attendance.filter((a) => a.status === "Late").length;
+        const earlyLeaveDays = attendance.filter(
+          (a) => a.status === "Early-Leave"
+        ).length;
 
         // Calculate working days (excluding weekends and holidays)
-        const workingDays = attendance.filter(a => 
-          !a.isHoliday && !a.isWeekend
+        const workingDays = attendance.filter(
+          (a) => !a.isHoliday && !a.isWeekend
         ).length;
 
         // Calculate effective present days (including half days as 0.5)
-        const effectivePresentDays = presentDays + (halfDays * 0.5) + lateDays + earlyLeaveDays;
-        
+        const effectivePresentDays =
+          presentDays + halfDays * 0.5 + lateDays + earlyLeaveDays;
+
         // Calculate attendance percentage based on working days (excluding leave days)
-        const attendancePercentage = (workingDays - leaveDays) > 0 
-          ? Math.round((effectivePresentDays / (workingDays - leaveDays)) * 100) 
-          : 0;
+        const attendancePercentage =
+          workingDays - leaveDays > 0
+            ? Math.round(
+                (effectivePresentDays / (workingDays - leaveDays)) * 100
+              )
+            : 0;
 
         setAttendanceStats({
           present: effectivePresentDays,
           absent: absentDays,
           total: workingDays,
           percentage: attendancePercentage,
-          leaveCount: leaveDays
+          leaveCount: leaveDays,
         });
 
-        console.log('Attendance Statistics:', {
+        console.log("Attendance Statistics:", {
           totalRecords: attendance.length,
           workingDays,
           presentDays,
@@ -129,9 +153,10 @@ const Profile = () => {
           lateDays,
           earlyLeaveDays,
           percentage: attendancePercentage,
-          leaveDetails: attendance.filter(a => a.status === 'On-Leave' || a.isLeave === true)
+          leaveDetails: attendance.filter(
+            (a) => a.status === "On-Leave" || a.isLeave === true
+          ),
         });
-
       } else {
         // If no attendance data available, keep default values
         setAttendanceStats({
@@ -139,31 +164,30 @@ const Profile = () => {
           absent: 0,
           total: 0,
           percentage: 0,
-          leaveCount: 0
+          leaveCount: 0,
         });
       }
-
     } catch (error) {
-      console.error('Error fetching attendance stats:', error);
-      toast.error('Failed to fetch attendance statistics');
+      console.error("Error fetching attendance stats:", error);
+      toast.error("Failed to fetch attendance statistics");
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes('emergency')) {
-      const field = name.split('.')[1];
-      setFormData(prev => ({
+    if (name.includes("emergency")) {
+      const field = name.split(".")[1];
+      setFormData((prev) => ({
         ...prev,
         emergencyContact: {
           ...prev.emergencyContact,
-          [field]: value
-        }
+          [field]: value,
+        },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
@@ -177,51 +201,51 @@ const Profile = () => {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size should be less than 5MB');
+      toast.error("Image size should be less than 5MB");
       return;
     }
 
     try {
       setIsUploading(true);
       const formData = new FormData();
-      formData.append('profilePicture', file);
+      formData.append("profilePicture", file);
 
-      const response = await authService.updateProfilePicture(formData);
-      
+      const response = await updateProfilePicture(formData);
+
       // Log the entire response for debugging
-      console.log('Full response:', response);
-      console.log('Response data:', response.data);
-      console.log('Employee data:', response.data?.data?.employee);
+      console.log("Full response:", response);
+      console.log("Response data:", response.data);
+      console.log("Employee data:", response.data?.data?.employee);
 
       if (!response.data?.data?.employee) {
-        throw new Error('No employee data received');
+        throw new Error("No employee data received");
       }
 
       const updatedUser = response.data.data.employee;
-      authService.updateUser(updatedUser);
+      const { updateUser } = useAuthStore();
+      updateUser(updatedUser);
       setCurrentUser(updatedUser);
 
       if (!updatedUser.profilePicture) {
-        throw new Error('No profile picture URL received');
+        throw new Error("No profile picture URL received");
       }
 
-      const cleanPath = updatedUser.profilePicture.replace(/^\/+/, '');
+      const cleanPath = updatedUser.profilePicture.replace(/^\/+/, "");
       const fullUrl = `${import.meta.env.VITE_API_URL}/${cleanPath}`;
-      
-      console.log('Setting profile URL:', fullUrl);
-      setProfilePicUrl(fullUrl);
-      toast.success('Profile picture updated successfully');
 
+      console.log("Setting profile URL:", fullUrl);
+      setProfilePicUrl(fullUrl);
+      toast.success("Profile picture updated successfully");
     } catch (error) {
-      console.error('Error updating profile picture:', error);
-      toast.error(error.message || 'Failed to update profile picture');
+      console.error("Error updating profile picture:", error);
+      toast.error(error.message || "Failed to update profile picture");
     } finally {
       setIsUploading(false);
     }
@@ -229,12 +253,13 @@ const Profile = () => {
 
   const handleSubmit = async () => {
     try {
-      const response = await authService.updateProfile(formData);
-      authService.updateUser(response.data.user);
-      toast.success('Profile updated successfully');
+      const response = await updateProfile(formData);
+      const { updateUser } = useAuthStore();
+      updateUser(response.data.user);
+      toast.success("Profile updated successfully");
       setIsEditing(false);
     } catch (error) {
-      toast.error(error.message || 'Failed to update profile');
+      toast.error(error.message || "Failed to update profile");
     }
   };
 
@@ -243,12 +268,12 @@ const Profile = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">My Profile</h1>
         <Button
-          onClick={() => isEditing ? handleSubmit() : setIsEditing(true)}
+          onClick={() => (isEditing ? handleSubmit() : setIsEditing(true))}
           variant="outline"
           className="flex items-center gap-2 transition-all hover:scale-105"
         >
           <PencilIcon className="h-4 w-4" />
-          {isEditing ? 'Save Changes' : 'Edit Profile'}
+          {isEditing ? "Save Changes" : "Edit Profile"}
         </Button>
       </div>
 
@@ -263,11 +288,11 @@ const Profile = () => {
                   className="w-full h-full object-cover transition-transform group-hover:scale-110"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = '/assets/images/default-avatar.png';
+                    e.target.src = "/assets/images/default-avatar.png";
                   }}
                 />
               </div>
-              <button 
+              <button
                 onClick={handleImageClick}
                 disabled={isUploading}
                 className="absolute bottom-4 right-0 p-2 bg-primary-600 rounded-full text-black opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
@@ -282,16 +307,24 @@ const Profile = () => {
                 onChange={handleImageChange}
               />
             </div>
-            <h2 className="text-xl font-semibold">{`${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`}</h2>
-            <p className="text-gray-600">{currentUser?.position?.title || 'No Position'}</p>
+            <h2 className="text-xl font-semibold">{`${
+              currentUser?.firstName || ""
+            } ${currentUser?.lastName || ""}`}</h2>
+            <p className="text-gray-600">
+              {currentUser?.position?.title || "No Position"}
+            </p>
             <div className="mt-4 w-full">
               <div className="flex items-center justify-center space-x-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-primary-600">{attendanceStats.percentage}%</p>
+                  <p className="text-2xl font-bold text-primary-600">
+                    {attendanceStats.percentage}%
+                  </p>
                   <p className="text-sm text-gray-500">Attendance</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-primary-600">{attendanceStats.leaveCount}</p>
+                  <p className="text-2xl font-bold text-primary-600">
+                    {attendanceStats.leaveCount}
+                  </p>
                   <p className="text-sm text-gray-500">Leave Days</p>
                 </div>
               </div>
@@ -303,7 +336,9 @@ const Profile = () => {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">First Name</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  First Name
+                </label>
                 {isEditing ? (
                   <Input
                     name="firstName"
@@ -316,7 +351,9 @@ const Profile = () => {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Last Name</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Last Name
+                </label>
                 {isEditing ? (
                   <Input
                     name="lastName"
@@ -329,7 +366,9 @@ const Profile = () => {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Email
+                </label>
                 {isEditing ? (
                   <Input
                     name="email"
@@ -343,7 +382,9 @@ const Profile = () => {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Phone
+                </label>
                 {isEditing ? (
                   <Input
                     name="phone"
@@ -352,27 +393,45 @@ const Profile = () => {
                     className="transition-all focus:scale-[1.01]"
                   />
                 ) : (
-                  <p className="text-gray-900">{formData.phone || 'Not set'}</p>
+                  <p className="text-gray-900">{formData.phone || "Not set"}</p>
                 )}
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Department</label>
-                <p className="text-gray-900">{currentUser?.department?.name || 'No Department'}</p>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Department
+                </label>
+                <p className="text-gray-900">
+                  {currentUser?.department?.name || "No Department"}
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Position</label>
-                <p className="text-gray-900">{currentUser?.position?.title || 'No Position'}</p>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Position
+                </label>
+                <p className="text-gray-900">
+                  {currentUser?.position?.title || "No Position"}
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Employee ID</label>
-                <p className="text-gray-900">{currentUser?.employeeId || 'Not set'}</p>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Employee ID
+                </label>
+                <p className="text-gray-900">
+                  {currentUser?.employeeId || "Not set"}
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Join Date</label>
-                <p className="text-gray-900">{currentUser?.joiningDate ? new Date(currentUser.joiningDate).toLocaleDateString() : 'Not set'}</p>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Join Date
+                </label>
+                <p className="text-gray-900">
+                  {currentUser?.joiningDate
+                    ? new Date(currentUser.joiningDate).toLocaleDateString()
+                    : "Not set"}
+                </p>
               </div>
             </div>
           </div>
@@ -382,7 +441,9 @@ const Profile = () => {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Contact Name</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Contact Name
+                  </label>
                   {isEditing ? (
                     <Input
                       name="emergency.name"
@@ -391,11 +452,15 @@ const Profile = () => {
                       className="transition-all focus:scale-[1.01]"
                     />
                   ) : (
-                    <p className="text-gray-900">{formData.emergencyContact.name || 'Not set'}</p>
+                    <p className="text-gray-900">
+                      {formData.emergencyContact.name || "Not set"}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Relationship</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Relationship
+                  </label>
                   {isEditing ? (
                     <Input
                       name="emergency.relationship"
@@ -404,13 +469,17 @@ const Profile = () => {
                       className="transition-all focus:scale-[1.01]"
                     />
                   ) : (
-                    <p className="text-gray-900">{formData.emergencyContact.relationship || 'Not set'}</p>
+                    <p className="text-gray-900">
+                      {formData.emergencyContact.relationship || "Not set"}
+                    </p>
                   )}
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Contact Phone</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Contact Phone
+                  </label>
                   {isEditing ? (
                     <Input
                       name="emergency.phone"
@@ -419,11 +488,15 @@ const Profile = () => {
                       className="transition-all focus:scale-[1.01]"
                     />
                   ) : (
-                    <p className="text-gray-900">{formData.emergencyContact.phone || 'Not set'}</p>
+                    <p className="text-gray-900">
+                      {formData.emergencyContact.phone || "Not set"}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Contact Email</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Contact Email
+                  </label>
                   {isEditing ? (
                     <Input
                       name="emergency.email"
@@ -432,7 +505,9 @@ const Profile = () => {
                       className="transition-all focus:scale-[1.01]"
                     />
                   ) : (
-                    <p className="text-gray-900">{formData.emergencyContact.email || 'Not set'}</p>
+                    <p className="text-gray-900">
+                      {formData.emergencyContact.email || "Not set"}
+                    </p>
                   )}
                 </div>
               </div>
@@ -444,4 +519,4 @@ const Profile = () => {
   );
 };
 
-export default Profile; 
+export default Profile;

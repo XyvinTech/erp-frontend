@@ -1,49 +1,55 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
-import { FiEye, FiEyeOff, FiMail, FiLock } from 'react-icons/fi';
-import authService from '@/services/auth.service';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { motion } from "framer-motion";
+import { FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi";
+import useAuthStore from "@/stores/auth.store";
+
+import { loginSchema } from "@/zod-validators/login.schema";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
+  const { login } = useAuthStore();
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
-  } = useForm();
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+  });
 
   const onSubmit = async (data) => {
     try {
       setIsLoading(true);
-      const response = await authService.login(data.email, data.password);
-      
-      // The token and user are directly in the response
-      const { token, user } = response;
-      
-      if (token && user) {
-        // Store the token and user data
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        
-        toast.success('Login successful!');
-        navigate('/');
+      const response = await login({
+        email: data.email,
+        password: data.password,
+      });
+      console.log("Login response:", response);
+
+      if (response.success) {
+        toast.success("Login successful!");
+        navigate("/dashboard");
       } else {
-        throw new Error('Login failed: Invalid response format');
+        throw new Error(response.error || "Login failed");
       }
     } catch (error) {
-      console.error('Login error:', error);
-      
+      console.error("Login error:", error);
+
       if (error.response?.data?.message) {
-        setError('email', { message: error.response.data.message });
+        setError("email", { message: error.response.data.message });
       }
-      
-      toast.error(error.response?.data?.message || 'Login failed. Please try again.');
+
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Login failed. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +68,7 @@ const Login = () => {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
+            Or{" "}
             <Link
               to="/register"
               className="font-medium text-indigo-600 hover:text-indigo-500"
@@ -82,22 +88,24 @@ const Login = () => {
                 <FiMail className="h-5 w-5 text-gray-400" />
               </div>
               <input
-                {...register('email', {
-                  required: 'Email is required',
+                {...register("email", {
+                  required: "Email is required",
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
+                    message: "Invalid email address",
                   },
                 })}
                 id="email"
                 type="email"
                 className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
+                  errors.email ? "border-red-300" : "border-gray-300"
                 } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 placeholder="Email address"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
@@ -110,17 +118,17 @@ const Login = () => {
                 <FiLock className="h-5 w-5 text-gray-400" />
               </div>
               <input
-                {...register('password', {
-                  required: 'Password is required',
+                {...register("password", {
+                  required: "Password is required",
                   minLength: {
                     value: 6,
-                    message: 'Password must be at least 6 characters',
+                    message: "Password must be at least 6 characters",
                   },
                 })}
                 id="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 className={`appearance-none rounded-lg relative block w-full pl-10 pr-10 px-3 py-2 border ${
-                  errors.password ? 'border-red-300' : 'border-gray-300'
+                  errors.password ? "border-red-300" : "border-gray-300"
                 } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 placeholder="Password"
               />
@@ -174,7 +182,9 @@ const Login = () => {
               type="submit"
               disabled={isLoading}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                isLoading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
+                isLoading
+                  ? "bg-indigo-400"
+                  : "bg-indigo-600 hover:bg-indigo-700"
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200`}
             >
               {isLoading ? (
@@ -199,7 +209,7 @@ const Login = () => {
                   ></path>
                 </svg>
               ) : null}
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </div>
         </form>
@@ -208,4 +218,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

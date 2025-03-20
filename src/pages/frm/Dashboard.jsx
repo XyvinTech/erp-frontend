@@ -1,20 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  LineChart,
-  BarChart,
-  PieChart
-} from "@/components/ui/charts";
-import { 
-  CurrencyDollarIcon, 
-  BanknotesIcon, 
+import { LineChart, BarChart, PieChart } from "@/components/ui/charts";
+import {
+  CurrencyDollarIcon,
+  BanknotesIcon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon 
-} from '@heroicons/react/24/outline';
-import frmService from '@/services/frmService';
-import { toast } from 'react-hot-toast';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
+  ArrowTrendingDownIcon,
+} from "@heroicons/react/24/outline";
+import frmService from "@/api/frmService";
+import { toast } from "react-hot-toast";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 const FRMDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -29,21 +25,26 @@ const FRMDashboard = () => {
       const [expenses, personalLoans, officeLoans] = await Promise.all([
         frmService.getExpenses(),
         frmService.getPersonalLoanStats(),
-        frmService.getOfficeLoanStats()
+        frmService.getOfficeLoanStats(),
       ]);
 
       // Format expense stats
       const formattedExpenseStats = {
         totalAmount: expenses.reduce((sum, exp) => sum + exp.amount, 0),
         totalCount: expenses.length,
-        pendingCount: expenses.filter(exp => exp.status === 'Pending').length,
-        approvedCount: expenses.filter(exp => exp.status === 'Approved').length,
-        rejectedCount: expenses.filter(exp => exp.status === 'Rejected').length,
-        pendingAmount: expenses.filter(exp => exp.status === 'Pending')
+        pendingCount: expenses.filter((exp) => exp.status === "Pending").length,
+        approvedCount: expenses.filter((exp) => exp.status === "Approved")
+          .length,
+        rejectedCount: expenses.filter((exp) => exp.status === "Rejected")
+          .length,
+        pendingAmount: expenses
+          .filter((exp) => exp.status === "Pending")
           .reduce((sum, exp) => sum + exp.amount, 0),
-        approvedAmount: expenses.filter(exp => exp.status === 'Approved')
+        approvedAmount: expenses
+          .filter((exp) => exp.status === "Approved")
           .reduce((sum, exp) => sum + exp.amount, 0),
-        rejectedAmount: expenses.filter(exp => exp.status === 'Rejected')
+        rejectedAmount: expenses
+          .filter((exp) => exp.status === "Rejected")
           .reduce((sum, exp) => sum + exp.amount, 0),
         categoryDistribution: Object.entries(
           expenses.reduce((acc, exp) => {
@@ -52,8 +53,8 @@ const FRMDashboard = () => {
           }, {})
         ).map(([category, amount]) => ({
           name: category.charAt(0).toUpperCase() + category.slice(1),
-          value: amount
-        }))
+          value: amount,
+        })),
       };
 
       setExpenseStats(formattedExpenseStats);
@@ -62,24 +63,29 @@ const FRMDashboard = () => {
 
       // Calculate profit stats from the data
       const profitData = {
-        totalAmount: (formattedExpenseStats?.totalAmount || 0) + 
-                    (personalLoans?.totalAmount || 0) + 
-                    (officeLoans?.totalAmount || 0),
+        totalAmount:
+          (formattedExpenseStats?.totalAmount || 0) +
+          (personalLoans?.totalAmount || 0) +
+          (officeLoans?.totalAmount || 0),
         monthlyTrend: expenses.reduce((acc, exp) => {
           const month = new Date(exp.date).getMonth();
           acc[month] = (acc[month] || 0) + exp.amount;
           return acc;
         }, Array(12).fill(0)),
-        categoryDistribution: formattedExpenseStats.categoryDistribution
+        categoryDistribution: formattedExpenseStats.categoryDistribution,
       };
       setProfitStats(profitData);
     } catch (error) {
-      console.error('Error details:', {
+      console.error("Error details:", {
         message: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
       });
-      toast.error(`Failed to fetch statistics: ${error.response?.data?.message || error.message}`);
+      toast.error(
+        `Failed to fetch statistics: ${
+          error.response?.data?.message || error.message
+        }`
+      );
     } finally {
       setLoading(false);
     }
@@ -90,9 +96,9 @@ const FRMDashboard = () => {
   }, []);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount || 0);
   };
 
@@ -112,11 +118,15 @@ const FRMDashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Expenses
+            </CardTitle>
             <CurrencyDollarIcon className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(expenseStats?.totalAmount)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(expenseStats?.totalAmount)}
+            </div>
             <p className="text-xs text-gray-500">
               {expenseStats?.totalCount} transactions
             </p>
@@ -125,11 +135,15 @@ const FRMDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Personal Loans</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Personal Loans
+            </CardTitle>
             <BanknotesIcon className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(personalLoanStats?.totalAmount)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(personalLoanStats?.totalAmount)}
+            </div>
             <p className="text-xs text-gray-500">
               {personalLoanStats?.totalCount} active loans
             </p>
@@ -142,7 +156,9 @@ const FRMDashboard = () => {
             <BanknotesIcon className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(officeLoanStats?.totalAmount)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(officeLoanStats?.totalAmount)}
+            </div>
             <p className="text-xs text-gray-500">
               {officeLoanStats?.totalCount} active loans
             </p>
@@ -159,10 +175,10 @@ const FRMDashboard = () => {
             )}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(profitStats?.totalAmount)}</div>
-            <p className="text-xs text-gray-500">
-              Overall financial position
-            </p>
+            <div className="text-2xl font-bold">
+              {formatCurrency(profitStats?.totalAmount)}
+            </div>
+            <p className="text-xs text-gray-500">Overall financial position</p>
           </CardContent>
         </Card>
       </div>
@@ -235,7 +251,20 @@ const FRMDashboard = () => {
                       data: profitStats?.monthlyTrend || Array(12).fill(0),
                     },
                   ]}
-                  categories={["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]}
+                  categories={[
+                    "Jan",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "May",
+                    "Jun",
+                    "Jul",
+                    "Aug",
+                    "Sep",
+                    "Oct",
+                    "Nov",
+                    "Dec",
+                  ]}
                   colors={["#dc2626"]}
                   yAxisWidth={60}
                   height={350}
@@ -250,9 +279,18 @@ const FRMDashboard = () => {
               <CardContent>
                 <PieChart
                   data={[
-                    { name: "Pending", value: expenseStats?.pendingAmount || 0 },
-                    { name: "Approved", value: expenseStats?.approvedAmount || 0 },
-                    { name: "Rejected", value: expenseStats?.rejectedAmount || 0 },
+                    {
+                      name: "Pending",
+                      value: expenseStats?.pendingAmount || 0,
+                    },
+                    {
+                      name: "Approved",
+                      value: expenseStats?.approvedAmount || 0,
+                    },
+                    {
+                      name: "Rejected",
+                      value: expenseStats?.rejectedAmount || 0,
+                    },
                   ]}
                   colors={["#f59e0b", "#16a34a", "#dc2626"]}
                   height={350}
@@ -295,8 +333,14 @@ const FRMDashboard = () => {
               <CardContent>
                 <PieChart
                   data={[
-                    { name: "Personal Loans", value: personalLoanStats?.totalCount || 0 },
-                    { name: "Office Loans", value: officeLoanStats?.totalCount || 0 },
+                    {
+                      name: "Personal Loans",
+                      value: personalLoanStats?.totalCount || 0,
+                    },
+                    {
+                      name: "Office Loans",
+                      value: officeLoanStats?.totalCount || 0,
+                    },
                   ]}
                   colors={["#6366f1", "#0ea5e9"]}
                   height={350}
@@ -310,4 +354,4 @@ const FRMDashboard = () => {
   );
 };
 
-export default FRMDashboard; 
+export default FRMDashboard;
