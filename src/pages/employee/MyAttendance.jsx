@@ -71,9 +71,9 @@ const MyAttendance = () => {
       setLoading(true);
       const startDate = format(startOfMonth(currentMonth), "yyyy-MM-dd");
       const endDate = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-      const { getMyAttendance } = useHrmStore();
-      const response = await getMyAttendance(startDate, endDate);
-      const { attendance, monthlyStats } = response.data;
+      const store = useHrmStore.getState();
+      const response = await store.getMyAttendance({ startDate, endDate });
+      const { attendance, stats: monthlyStats } = response.data;
 
       setMonthlyAttendance(attendance);
       setStats({

@@ -52,9 +52,14 @@ const useHrmStore = create(
         set({ employeesLoading: true, employeesError: null });
         try {
           const employees = await hrmService.getEmployees(params);
-          set({ employees, employeesLoading: false });
-          return employees;
+          console.log('Raw API response:', employees);
+          // Ensure employees is always an array
+          const employeesArray = Array.isArray(employees) ? employees : [];
+          console.log('Processed employees array:', employeesArray);
+          set({ employees: employeesArray, employeesLoading: false });
+          return employeesArray;
         } catch (error) {
+          console.error('Error fetching employees:', error);
           set({
             employees: [],
             employeesError: error.response?.data?.message || 'Failed to fetch employees',
@@ -144,16 +149,31 @@ const useHrmStore = create(
         }
       },
 
+      // Get next employee ID
+      getNextEmployeeId: async () => {
+        try {
+          console.log('Requesting next employee ID from store...');
+          const response = await hrmService.getNextEmployeeId();
+          console.log('Next employee ID response in store:', response);
+          return response;
+        } catch (error) {
+          console.error('Error getting next employee ID:', error);
+          throw error;
+        }
+      },
+
       // Department Actions
       fetchDepartments: async () => {
         set({ departmentsLoading: true, departmentsError: null });
         try {
-          const departments = await hrmService.getDepartments();
-          set({ departments, departmentsLoading: false });
+          const response = await hrmService.getDepartments();
+          console.log('Fetched departments:', response);
+          set({ departments: response, departmentsLoading: false });
         } catch (error) {
+          console.error('Error fetching departments:', error);
           set({
-            departments: [],
-            departmentsError: error.response?.data?.error?.message || 'Failed to fetch departments',
+            departments: { data: { departments: [] } },
+            departmentsError: error.response?.data?.message || 'Failed to fetch departments',
             departmentsLoading: false,
           });
         }
@@ -230,8 +250,14 @@ const useHrmStore = create(
         set({ positionsLoading: true, positionsError: null });
         try {
           const positions = await hrmService.getPositions();
-          set({ positions, positionsLoading: false });
+          console.log('Raw positions response:', positions);
+          // Ensure positions is always an array
+          const positionsArray = Array.isArray(positions) ? positions : [];
+          console.log('Processed positions array:', positionsArray);
+          set({ positions: positionsArray, positionsLoading: false });
+          return positionsArray;
         } catch (error) {
+          console.error('Error fetching positions:', error);
           set({
             positions: [],
             positionsError: error.response?.data?.error?.message || 'Failed to fetch positions',
@@ -398,12 +424,31 @@ const useHrmStore = create(
         set({ leavesLoading: true, leavesError: null });
         try {
           const leaves = await hrmService.getLeaves();
-          set({ leaves, leavesLoading: false });
-          return leaves;
+          // Ensure leaves is always an array
+          const leavesArray = Array.isArray(leaves) ? leaves : [];
+          console.log('Fetched leaves:', leavesArray);
+          set({ leaves: leavesArray, leavesLoading: false });
+          return leavesArray;
         } catch (error) {
+          console.error('Error fetching leaves:', error);
           set({
             leaves: [],
             leavesError: error.response?.data?.message || 'Failed to fetch leaves',
+            leavesLoading: false,
+          });
+          throw error;
+        }
+      },
+
+      getMyLeave: async () => {
+        set({ leavesLoading: true, leavesError: null });
+        try {
+          const response = await hrmService.getMyLeave();
+          return response;
+        } catch (error) {
+          console.error('Error fetching my leaves:', error);
+          set({
+            leavesError: error.response?.data?.message || 'Failed to fetch my leaves',
             leavesLoading: false,
           });
           throw error;
@@ -761,6 +806,22 @@ const useHrmStore = create(
             attendanceLoading: false
           });
           throw error;
+        }
+      },
+
+      getMyAttendance: async (params) => {
+        set({ attendanceLoading: true, attendanceError: null });
+        try {
+          const response = await hrmService.getMyAttendance(params);
+          return response;
+        } catch (error) {
+          set({
+            attendanceError: error.response?.data?.message || 'Failed to fetch attendance',
+            attendanceLoading: false
+          });
+          throw error;
+        } finally {
+          set({ attendanceLoading: false });
         }
       },
     }),

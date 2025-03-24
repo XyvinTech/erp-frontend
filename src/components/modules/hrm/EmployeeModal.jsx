@@ -5,7 +5,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-hot-toast";
 import useHrmStore from "../../../stores/useHrmStore";
-  import useAuthStore from "../../../stores/auth.store";  
+import useAuthStore from "../../../stores/auth.store";
 
 const EMPLOYEE_ROLES = [
   "ERP System Administrator",
@@ -162,7 +162,7 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
           const response = await getNextEmployeeId();
           console.log("Response from getNextEmployeeId:", response);
 
-          // Fix the response structure extraction
+          // Extract employeeId from the response
           const nextId = response?.data?.employee?.employeeId;
           console.log("Next ID extracted:", nextId);
 
@@ -170,17 +170,17 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
             formik.setFieldValue("employeeId", nextId);
           } else {
             console.error("Invalid response structure:", response);
-            toast.error("Failed to generate employee ID");
+            toast.error("Failed to generate employee ID. Please try again.");
           }
         } catch (error) {
           console.error("Error fetching employee ID:", error);
-          toast.error("Failed to generate employee ID");
+          toast.error(error.response?.data?.message || "Failed to generate employee ID");
         }
       }
     };
 
     fetchEmployeeId();
-  }, [employee]); // Remove formik from dependencies since it's stable now
+  }, [employee, getNextEmployeeId]); // Add getNextEmployeeId to dependencies
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -398,11 +398,11 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             {...formik.getFieldProps("department")}
                           >
                             <option value="">Select Department</option>
-                            {departments &&
-                              departments.map((dept) => (
+                            {departments?.data?.departments &&
+                              departments.data.departments.map((dept) => (
                                 <option
-                                  key={dept._id || dept.id}
-                                  value={dept._id || dept.id}
+                                  key={dept.id || dept._id}
+                                  value={dept.id || dept._id}
                                 >
                                   {dept.name}
                                 </option>
@@ -431,15 +431,14 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             onBlur={formik.handleBlur}
                           >
                             <option value="">Select Position</option>
-                            {positions &&
-                              positions.map((position) => {
-                                const positionId = position._id || position.id;
-                                return (
-                                  <option key={positionId} value={positionId}>
-                                    {position.title}
-                                  </option>
-                                );
-                              })}
+                            {Array.isArray(positions) && positions.map((position) => {
+                              const positionId = position._id || position.id;
+                              return (
+                                <option key={positionId} value={positionId}>
+                                  {position.title}
+                                </option>
+                              );
+                            })}
                           </select>
                           {formik.touched.position &&
                             formik.errors.position && (

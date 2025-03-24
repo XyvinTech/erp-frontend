@@ -26,6 +26,7 @@ import useAuthStore from "@/stores/auth.store";
 
 const LeaveApplication = () => {
   const { getMyLeave, createLeave } = useHrmStore();
+  const { user } = useAuthStore();
 
   const [dateRange, setDateRange] = useState({
     from: new Date(),
@@ -50,8 +51,6 @@ const LeaveApplication = () => {
   useEffect(() => {
     const fetchLeaveData = async () => {
       try {
-        const { user } = useAuthStore();
-        console.log("Current user:", user);
         if (!user) {
           toast.error("User information not found");
           setIsLoading(false);
@@ -146,7 +145,6 @@ const LeaveApplication = () => {
     }
 
     try {
-      const { user } = useAuthStore();
       console.log("User data for submit:", user);
 
       if (!user) {

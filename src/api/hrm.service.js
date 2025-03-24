@@ -3,7 +3,8 @@ import api from './api';
 // Employees
 export const getEmployees = async () => {
     const response = await api.get('hrm/employees');
-    return response.data;
+    // Return the employees array from the nested data structure
+    return response.data?.data?.employees || [];
 };
 
 export const getEmployee = async (id) => {
@@ -29,6 +30,7 @@ export const deleteEmployee = async (id) => {
 // Departments
 export const getDepartments = async () => {
     const response = await api.get('hrm/departments');
+    // Return the full response to maintain the data structure
     return response.data;
 };
 
@@ -54,7 +56,9 @@ export const deleteDepartment = async (id) => {
 
 export const getPositions = async () => {
     const response = await api.get('hrm/positions');
-    return response.data;
+    // Ensure we return an array of positions
+    const positions = response.data?.data?.positions || response.data?.positions || response.data || [];
+    return Array.isArray(positions) ? positions : [];
 };
 
 export const getPosition = async (id) => {
@@ -88,6 +92,11 @@ export const getAttendanceStats = async () => {
     return response.data;
 };
 
+export const getMyAttendance = async (params) => {
+    const response = await api.get('hrm/attendance/my-attendance', { params });
+    return response.data;
+};
+
 export const updateAttendance = async (id, data) => {
     const response = await api.put(`hrm/attendance/${id}`, data);
     return response.data;
@@ -110,7 +119,16 @@ export const createBulkAttendance = async (data) => {
 
 export const getLeaves = async () => {
     const response = await api.get('hrm/leaves');
-    return response.data;
+    // Ensure we return an array
+    const leaves = response.data?.leaves || response.data;
+    return Array.isArray(leaves) ? leaves : [];
+};
+
+export const getMyLeave = async () => {
+    const response = await api.get('hrm/leaves/my');
+    // Ensure we return an array
+    const leaves = response.data?.data?.leaves || response.data?.leaves || response.data || [];
+    return Array.isArray(leaves) ? { data: { leaves } } : { data: { leaves: [] } };
 };
 
 export const getLeave = async (id) => {
@@ -199,7 +217,8 @@ export const getNextDepartmentCode = async () => {
 
 // Next Employee Id
 export const getNextEmployeeId = async () => {
-    const response = await api.get('hrm/employees/id/next');
+    const response = await api.get('hrm/employees/next-id');
+    console.log('Next employee ID response:', response);
     return response.data;
 };
 

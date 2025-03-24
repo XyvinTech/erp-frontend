@@ -86,6 +86,8 @@ const Dashboard = () => {
     fetchAttendance,
     fetchLeaves,
     fetchPayroll,
+    departmentsLoading,
+    employeesLoading
   } = useHrmStore();
 
   const [stats, setStats] = useState({
@@ -98,17 +100,25 @@ const Dashboard = () => {
   });
 
   const [recentActivities, setRecentActivities] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([
-        fetchEmployees(),
-        fetchDepartments(),
-        fetchPositions(),
-        fetchAttendance(),
-        fetchLeaves(),
-        fetchPayroll(),
-      ]);
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchEmployees(),
+          fetchDepartments(),
+          fetchPositions(),
+          fetchAttendance(),
+          fetchLeaves(),
+          fetchPayroll(),
+        ]);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadData();
   }, []);
@@ -131,79 +141,87 @@ const Dashboard = () => {
       const activities = [];
 
       // Add new employees (joined in the last 30 days)
-      employees?.forEach((emp) => {
-        if (emp.joiningDate) {
-          const joinDate = new Date(emp.joiningDate);
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      if (Array.isArray(employees)) {
+        employees.forEach((emp) => {
+          if (emp.joiningDate) {
+            const joinDate = new Date(emp.joiningDate);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-          if (joinDate >= thirtyDaysAgo) {
-            activities.push({
-              type: "employee_joined",
-              content: `${emp.firstName} ${emp.lastName} joined as ${
-                emp.position?.title || "Employee"
-              }`,
-              date: joinDate,
-              icon: UserGroupIcon,
-              iconBackground: "bg-blue-500",
-            });
+            if (joinDate >= thirtyDaysAgo) {
+              activities.push({
+                type: "employee_joined",
+                content: `${emp.firstName} ${emp.lastName} joined as ${
+                  emp.position?.title || "Employee"
+                }`,
+                date: joinDate,
+                icon: UserGroupIcon,
+                iconBackground: "bg-blue-500",
+              });
+            }
           }
-        }
-      });
+        });
+      }
 
       // Add recent attendance records
-      attendance?.forEach((record) => {
-        if (record.date) {
-          const date = new Date(record.date);
-          activities.push({
-            type: "attendance",
-            content: `${record.employee?.firstName} ${record.employee?.lastName} marked as ${record.status}`,
-            date: date,
-            icon: ClockIcon,
-            iconBackground:
-              record.status === "Present"
-                ? "bg-green-500"
-                : record.status === "Late"
-                ? "bg-yellow-500"
-                : "bg-red-500",
-          });
-        }
-      });
+      if (Array.isArray(attendance)) {
+        attendance.forEach((record) => {
+          if (record.date) {
+            const date = new Date(record.date);
+            activities.push({
+              type: "attendance",
+              content: `${record.employee?.firstName} ${record.employee?.lastName} marked as ${record.status}`,
+              date: date,
+              icon: ClockIcon,
+              iconBackground:
+                record.status === "Present"
+                  ? "bg-green-500"
+                  : record.status === "Late"
+                  ? "bg-yellow-500"
+                  : "bg-red-500",
+            });
+          }
+        });
+      }
 
       // Add recent leave requests
-      leaves?.forEach((leave) => {
-        if (leave.createdAt || leave.updatedAt) {
-          const date = new Date(leave.updatedAt || leave.createdAt);
-          activities.push({
-            type: "leave",
-            content: `Leave request ${leave.status.toLowerCase()} for ${
-              leave.employee?.firstName
-            } ${leave.employee?.lastName}`,
-            date: date,
-            icon: CalendarIcon,
-            iconBackground:
-              leave.status === "Approved"
-                ? "bg-green-500"
-                : leave.status === "Pending"
-                ? "bg-yellow-500"
-                : "bg-red-500",
-          });
-        }
-      });
+      if (Array.isArray(leaves)) {
+        leaves.forEach((leave) => {
+          if (leave.createdAt || leave.updatedAt) {
+            const date = new Date(leave.updatedAt || leave.createdAt);
+            activities.push({
+              type: "leave",
+              content: `Leave request ${leave.status.toLowerCase()} for ${
+                leave.employee?.firstName
+              } ${leave.employee?.lastName}`,
+              date: date,
+              icon: CalendarIcon,
+              iconBackground:
+                leave.status === "Approved"
+                  ? "bg-green-500"
+                  : leave.status === "Pending"
+                  ? "bg-yellow-500"
+                  : "bg-red-500",
+            });
+          }
+        });
+      }
 
       // Add recent payroll activities
-      payroll?.forEach((pay) => {
-        if (pay.createdAt || pay.processedDate) {
-          const date = new Date(pay.processedDate || pay.createdAt);
-          activities.push({
-            type: "payroll",
-            content: `Payroll processed for ${pay.employee?.firstName} ${pay.employee?.lastName}`,
-            date: date,
-            icon: BanknotesIcon,
-            iconBackground: "bg-indigo-500",
-          });
-        }
-      });
+      if (Array.isArray(payroll)) {
+        payroll.forEach((pay) => {
+          if (pay.createdAt || pay.processedDate) {
+            const date = new Date(pay.processedDate || pay.createdAt);
+            activities.push({
+              type: "payroll",
+              content: `Payroll processed for ${pay.employee?.firstName} ${pay.employee?.lastName}`,
+              date: date,
+              icon: BanknotesIcon,
+              iconBackground: "bg-indigo-500",
+            });
+          }
+        });
+      }
 
       // Sort activities by date (most recent first) and take only the last 5
       return activities.sort((a, b) => b.date - a.date).slice(0, 5);
@@ -212,6 +230,21 @@ const Dashboard = () => {
     const activities = generateRecentActivities();
     setRecentActivities(activities);
   }, [employees, attendance, leaves, payroll]);
+
+  // Add debug logging for data arrays
+  useEffect(() => {
+    console.log("Raw employees data:", employees);
+    console.log("Is employees an array?", Array.isArray(employees));
+    console.log("Employees length:", employees?.length);
+    
+    console.log("Raw attendance data:", attendance);
+    console.log("Is attendance an array?", Array.isArray(attendance));
+    console.log("Attendance length:", attendance?.length);
+    
+    console.log("Raw payroll data:", payroll);
+    console.log("Is payroll an array?", Array.isArray(payroll));
+    console.log("Payroll length:", payroll?.length);
+  }, [employees, attendance, payroll]);
 
   // Attendance Status Distribution
   const attendanceData = {
@@ -231,22 +264,23 @@ const Dashboard = () => {
 
   // Department Employee Distribution
   const departmentData = {
-    labels: departments?.map((dept) => dept.name) || [],
+    labels: Array.isArray(departments) ? departments.map((dept) => dept.name) : [],
     datasets: [
       {
         label: "Number of Employees",
-        data:
-          departments?.map((dept) => {
-            // Count employees in this department
-            const count =
-              employees?.filter(
-                (emp) =>
-                  emp.department &&
-                  (emp.department._id === dept._id ||
-                    emp.department.id === dept.id)
-              ).length || 0;
-            return count;
-          }) || [],
+        data: Array.isArray(departments)
+          ? departments.map((dept) => {
+              // Count employees in this department
+              const count =
+                employees?.filter(
+                  (emp) =>
+                    emp.department &&
+                    (emp.department._id === dept._id ||
+                      emp.department.id === dept.id)
+                ).length || 0;
+              return count;
+            })
+          : [],
         backgroundColor: [
           "#3b82f6", // blue
           "#ef4444", // red
@@ -264,12 +298,11 @@ const Dashboard = () => {
 
   // Add console logs for debugging
   useEffect(() => {
-    if (departments?.length && employees?.length) {
-      console.log("Departments:", departments);
-      console.log("Employees:", employees);
-      console.log("Department Data:", departmentData);
-    }
-  }, [departments, employees]);
+    console.log("Raw departments data:", departments);
+    console.log("Is departments an array?", Array.isArray(departments));
+    console.log("Departments length:", departments?.length);
+    console.log("Department Data:", departmentData);
+  }, [departments]);
 
   // Department chart options
   const departmentChartOptions = {
@@ -321,14 +354,21 @@ const Dashboard = () => {
     datasets: [
       {
         data: [
-          leaves?.filter((l) => l.status === "Approved").length || 0,
-          leaves?.filter((l) => l.status === "Pending").length || 0,
-          leaves?.filter((l) => l.status === "Rejected").length || 0,
+          Array.isArray(leaves) ? leaves.filter((l) => l.status === "Approved").length : 0,
+          Array.isArray(leaves) ? leaves.filter((l) => l.status === "Pending").length : 0,
+          Array.isArray(leaves) ? leaves.filter((l) => l.status === "Rejected").length : 0,
         ],
         backgroundColor: ["#22c55e", "#eab308", "#ef4444"],
       },
     ],
   };
+
+  // Add debug logging for leaves data
+  useEffect(() => {
+    console.log("Raw leaves data:", leaves);
+    console.log("Is leaves an array?", Array.isArray(leaves));
+    console.log("Leaves length:", leaves?.length);
+  }, [leaves]);
 
   // Monthly Payroll Trend
   const payrollData = {
@@ -344,6 +384,15 @@ const Dashboard = () => {
       },
     ],
   };
+
+  // Add loading state check at the beginning of the render
+  if (isLoading || departmentsLoading || employeesLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
