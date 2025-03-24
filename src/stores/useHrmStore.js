@@ -248,6 +248,19 @@ const useHrmStore = create(
         }
       },
 
+      // Get next department code
+      getNextDepartmentCode: async () => {
+        try {
+          console.log('Requesting next department code from store...');
+          const response = await hrmService.getNextDepartmentCode();
+          console.log('Next department code response in store:', response);
+          return response;
+        } catch (error) {
+          console.error('Error getting next department code:', error);
+          throw error;
+        }
+      },
+
       // Position Actions
       fetchPositions: async () => {
         set({ positionsLoading: true, positionsError: null });
