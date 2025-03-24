@@ -269,6 +269,16 @@ const useHrmStore = create(
         }
       },
 
+      getNextPositionCode: async () => {
+        try {
+          const response = await hrmService.getNextPositionCode();
+          return response;
+        } catch (error) {
+          console.error('Error getting next position code:', error);
+          throw error;
+        }
+      },
+
       fetchPosition: async (id) => {
         set({ positionsLoading: true, positionsError: null });
         try {

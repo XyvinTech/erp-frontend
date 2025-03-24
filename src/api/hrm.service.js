@@ -222,6 +222,12 @@ export const getNextEmployeeId = async () => {
     return response.data;
 };
 
+// Next Position Code
+export const getNextPositionCode = async () => {
+    const response = await api.get('hrm/positions/code/next');
+    return response.data;
+};
+
 // Events
 export const getEvents = async () => {
     const response = await api.get('hrm/events');

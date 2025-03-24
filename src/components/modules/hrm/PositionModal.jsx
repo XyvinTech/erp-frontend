@@ -3,10 +3,16 @@ import { Dialog, Switch } from "@headlessui/react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import useHrmStore from "../../../stores/useHrmStore";  
+import useHrmStore from "../../../stores/useHrmStore";
 
 const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
-  const { departments, fetchDepartments, getNextPositionCode } = useHrmStore();
+  const { 
+    departments, 
+    fetchDepartments, 
+    getNextPositionCode,
+    createPosition,
+    updatePosition 
+  } = useHrmStore();
   const {
     register,
     handleSubmit,
@@ -117,10 +123,10 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
       };
 
       if (position) {
-        await hrmService.updatePosition(position.id, formattedData);
+        await updatePosition(position.id, formattedData);
         toast.success("Position updated successfully");
       } else {
-        await hrmService.createPosition(formattedData);
+        await createPosition(formattedData);
         toast.success("Position created successfully");
       }
 
