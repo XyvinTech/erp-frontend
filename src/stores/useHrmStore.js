@@ -168,11 +168,14 @@ const useHrmStore = create(
         try {
           const response = await hrmService.getDepartments();
           console.log('Fetched departments:', response);
-          set({ departments: response, departmentsLoading: false });
+          set({ 
+            departments: response.data.departments, 
+            departmentsLoading: false 
+          });
         } catch (error) {
           console.error('Error fetching departments:', error);
           set({
-            departments: { data: { departments: [] } },
+            departments: [],
             departmentsError: error.response?.data?.message || 'Failed to fetch departments',
             departmentsLoading: false,
           });
@@ -563,16 +566,17 @@ const useHrmStore = create(
         try {
           const payroll = await hrmService.getPayroll(params);
           set({
-            payroll,
-            payrollLoading: false
+            payroll: Array.isArray(payroll) ? payroll : [],
+            payrollLoading: false,
+            payrollError: null
           });
-          console.log(payroll, 'payrrroll')
+          console.log('Fetched payroll:', payroll);
         } catch (error) {
           console.error('Error fetching payroll:', error);
           set({
             payroll: [],
             payrollError: error.response?.data?.message || 'Failed to fetch payroll',
-            payrollLoading: false,
+            payrollLoading: false
           });
         }
       },

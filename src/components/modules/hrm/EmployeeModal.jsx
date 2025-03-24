@@ -48,7 +48,6 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
   const { departments, positions, fetchDepartments, fetchPositions, createEmployee, updateEmployee, getNextEmployeeId  } =
     useHrmStore();
   const { user } = useAuthStore();
-  const currentUser = useAuthStore.user;
   const [isLoading, setIsLoading] = useState(false);
 
   // Initialize formik first
@@ -78,9 +77,10 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
       try {
         console.log("Form submitted with values:", values);
         setIsLoading(true);
-        const userId = user?._id || currentUser?._id;
 
-        if (!userId) {
+        // Get user from auth store
+        const authUser = useAuthStore.getState().user;
+        if (!authUser?._id && !authUser?.id) {
           toast.error("Authentication required. Please log in again.");
           return;
         }
@@ -92,11 +92,12 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
           email: values.email,
           phone: values.phone,
           department: values.department,
-          position: values.position, // This should now always be an ID string
+          position: values.position,
           role: values.role,
           joiningDate: values.joiningDate,
           status: values.status || "active",
           salary: Number(values.salary),
+          createdBy: authUser._id || authUser.id // Add the user ID here
         };
 
         console.log("Sending form data:", formData);
@@ -104,7 +105,6 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
         if (!employee?.id && !employee?._id) {
           formData.employeeId = values.employeeId;
           formData.password = values.password;
-          formData.createdBy = userId;
         }
 
         let response;

@@ -93,7 +93,9 @@ const Payroll = () => {
   useEffect(() => {
     if (Array.isArray(payroll)) {
       const uniqueEmployees = new Set(
-        payroll.map((record) => record.employee._id)
+        payroll
+          .filter(record => record.employee && record.employee._id)
+          .map((record) => record.employee._id)
       );
       const paidEmployees = payroll.filter(
         (record) => record.status === "paid"
@@ -127,29 +129,34 @@ const Payroll = () => {
     () => [
       {
         Header: "Employee Id",
-        accessor: (row) => `${row.employee.firstName} ${row.employee.lastName}`,
+        accessor: (row) => {
+          if (!row.employee) return "N/A";
+          return `${row.employee.firstName || ''} ${row.employee.lastName || ''}`.trim() || "N/A";
+        },
       },
       {
         Header: "Employee Name",
-        accessor: "employee.department.name",
+        accessor: (row) => row.employee?.department?.name || "N/A",
       },
       {
         Header: "Position",
-        accessor: "employee.position.title",
+        accessor: (row) => row.employee?.position?.title || "N/A",
       },
       {
         Header: "Email",
-        accessor: "employee.email",
+        accessor: (row) => row.employee?.email || "N/A",
       },
       {
         Header: "Joining Date",
-        accessor: "employee.joiningDate",
-        Cell: ({ value }) =>
-          new Date(value).toLocaleDateString("en-US", {
+        accessor: (row) => row.employee?.joiningDate,
+        Cell: ({ value }) => {
+          if (!value) return "N/A";
+          return new Date(value).toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
             day: "numeric",
-          }),
+          });
+        },
       },
       {
         Header: "Salary",
@@ -169,7 +176,7 @@ const Payroll = () => {
                 : "bg-red-100 text-red-800"
             }`}
           >
-            {value.charAt(0).toUpperCase() + value.slice(1)}
+            {value ? value.charAt(0).toUpperCase() + value.slice(1) : "N/A"}
           </span>
         ),
       },

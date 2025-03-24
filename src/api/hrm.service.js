@@ -169,7 +169,7 @@ export const reviewLeave = async (id, data) => {
 // Payroll
 export const getPayroll = async () => {
     const response = await api.get('hrm/payroll');
-    return response.data;
+    return response.data?.data || [];
 };
 
 export const getPayrollById = async (id) => {
