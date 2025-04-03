@@ -34,26 +34,31 @@ const useAuthStore = create(
           const response = await authService.login(data);
           console.log("Auth store login response:", response);
 
-          // Extract user data and token from response structure
-          const userData = response.user || (response.data && response.data.user);
-          const token = response.token || (response.data && response.data.token);
+          if (!response.success) {
+            throw new Error(response.message || "Login failed");
+          }
+
+          const token = response.token;
+          const userData = response.user;
 
           if (!userData || !token) {
             throw new Error("Invalid login response format");
           }
 
-          // Ensure the user has a roles property (default to Employee if missing)
-          if (!userData.roles || !Array.isArray(userData.roles) || userData.roles.length === 0) {
-            userData.roles = [{ name: 'Employee' }];
-            console.log("Added default Employee role to user data");
-          }
+          // Set the authentication state
+          set({ 
+            isAuthenticated: true, 
+            user: userData,
+            token: token,
+            isLoading: false 
+          });
 
-          set({ isAuthenticated: true, user: userData, isLoading: false });
+          // Store in localStorage
           localStorage.setItem("token", token);
           localStorage.setItem("user", JSON.stringify(userData));
 
           console.log("User data stored:", userData);
-          console.log("User roles:", userData.roles);
+          console.log("Token stored:", token);
 
           return { success: true, user: userData };
         } catch (error) {
@@ -85,6 +90,10 @@ const useAuthStore = create(
 
       logout: () => {
         authService.logout();
+        // Clear localStorage items
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        // Reset store state
         set({
           user: null,
           token: null,

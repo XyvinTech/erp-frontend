@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 
 const userNavigation = [
   { name: "Your Profile", href: "/employee/profile" },
-  { name: "Settings", href: "/settings" },
+  // { name: "Settings", href: "/settings" },
 ];
 
 function classNames(...classes) {
@@ -21,9 +21,10 @@ function classNames(...classes) {
 const Header = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const { logout } = useAuthStore();
 
   useEffect(() => {
-    const currentUser = useAuthStore.user;
+    const currentUser = useAuthStore.getState().user;
     setUser(currentUser);
   }, []);
 
@@ -34,7 +35,7 @@ const Header = ({ onMenuClick }) => {
   };
 
   const handleLogout = () => {
-    useAuthStore.logout();
+    logout();
     navigate("/login");
   };
 

@@ -14,10 +14,16 @@ export const login = async (data) => {
       throw new Error('Invalid API response format');
     }
 
+    // Return the data directly since our interceptor already handles the data extraction
     return response.data;
   } catch (error) {
     console.error('Auth service login error:', error);
-    throw error;
+    // If the error has a response, return the error message from the server
+    if (error.response?.data) {
+      throw error.response.data;
+    }
+    // Otherwise throw a generic error
+    throw new Error(error.message || 'Login failed');
   }
 };
 

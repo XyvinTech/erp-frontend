@@ -255,6 +255,11 @@ export const deleteEvent = async (id) => {
     return response.data;
 };
 
+export const getCurrentEmployee = async () => {
+    const response = await api.get('hrm/employees/me');
+    return response.data;
+};
+
 
 
 

@@ -162,6 +162,17 @@ const useHrmStore = create(
         }
       },
 
+      // Get current employee profile
+      getCurrentEmployee: async () => {
+        try {
+          const response = await hrmService.getCurrentEmployee();
+          return response;
+        } catch (error) {
+          console.error('Error getting current employee:', error);
+          throw error;
+        }
+      },
+
       // Department Actions
       fetchDepartments: async () => {
         set({ departmentsLoading: true, departmentsError: null });

@@ -113,7 +113,7 @@ const Sidebar = ({ open, setOpen }) => {
       : null);
 
   // Use userFromStorage for roles
-  const userRoles = userFromStorage?.roles?.map((role) => role.name) || [];
+  const userRoles = userFromStorage?.role || "";
 
   console.log("Sidebar - Current user role:", userRoles);
 
@@ -138,14 +138,12 @@ const Sidebar = ({ open, setOpen }) => {
   let allowedSections = ["base", "employee"]; // default
 
   // Add sections from each role the user has
-  userRoles.forEach((role) => {
-    const roleSections = navigationPermissions[role] || [];
-    roleSections.forEach((section) => {
-      if (!allowedSections.includes(section)) {
-        allowedSections.push(section);
-      }
-    });
-  });
+  const roleSections = navigationPermissions[userRoles] || [];
+roleSections.forEach((section) => {
+  if (!allowedSections.includes(section)) {
+    allowedSections.push(section);
+  }
+});
 
   console.log("Sidebar - Allowed sections:", allowedSections);
 

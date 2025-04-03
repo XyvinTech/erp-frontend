@@ -48,36 +48,26 @@ const ProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Ensure user has a roles property
-  if (
-    !userFromStorage.roles ||
-    !Array.isArray(userFromStorage.roles) ||
-    userFromStorage.roles.length === 0
-  ) {
+  // Ensure user has a role property
+  if (!userFromStorage.role) {
     // Assign default Employee role
-    userFromStorage.roles = [{ name: "Employee" }];
+    userFromStorage.role = "Employee";
 
     // Update localStorage with the updated user object
     localStorage.setItem("user", JSON.stringify(userFromStorage));
-
-    // Update the store
-    const { updateUser } = useAuthStore.getState();
-    updateUser(userFromStorage);
-
-    console.log("Added default Employee role to user");
   }
 
   // Check role-based access
   const path = location.pathname.toLowerCase();
-  const userRoles = userFromStorage?.roles?.map((role) => role.name) || [];
+  const userRole = userFromStorage.role;
 
   // Log for debugging
   console.log("Current user:", userFromStorage);
-  console.log("Current user roles:", userRoles);
+  console.log("Current user role:", userRole);
   console.log("Current path:", path);
 
-  // If user has no roles, grant access to at least basic routes
-  if (!userRoles.length) {
+  // If user has no role, grant access to at least basic routes
+  if (!userRole) {
     if (path === "/" || path === "/dashboard" || path === "/profile") {
       return <Outlet />;
     }
@@ -161,27 +151,22 @@ const ProtectedRoute = () => {
     ],
   };
 
-  // Check if user has access to the current path based on any of their roles
-  const hasAccess = userRoles.some((role) => {
-    // Get allowed paths for this role
-    const allowedPaths = routePermissions[role] || [];
+  // Check if user has access to the current path based on their role
+  const allowedPaths = routePermissions[userRole] || [];
+  const hasAccess = allowedPaths.some((allowedPath) => {
+    const normalizedPath = path.toLowerCase();
+    const normalizedAllowedPath = allowedPath.toLowerCase();
 
-    // Check if any of the allowed paths match the current path
-    return allowedPaths.some((allowedPath) => {
-      const normalizedPath = path.toLowerCase();
-      const normalizedAllowedPath = allowedPath.toLowerCase();
+    // Handle exact matches
+    if (normalizedPath === normalizedAllowedPath) return true;
 
-      // Handle exact matches
-      if (normalizedPath === normalizedAllowedPath) return true;
+    // Handle child paths (e.g., /projects/details/123 should match /projects/details)
+    if (normalizedPath.startsWith(normalizedAllowedPath + "/")) return true;
 
-      // Handle child paths (e.g., /projects/details/123 should match /projects/details)
-      if (normalizedPath.startsWith(normalizedAllowedPath + "/")) return true;
+    // Root path check (special case)
+    if (normalizedAllowedPath === "/" && normalizedPath === "/") return true;
 
-      // Root path check (special case)
-      if (normalizedAllowedPath === "/" && normalizedPath === "/") return true;
-
-      return false;
-    });
+    return false;
   });
 
   console.log("Has access:", hasAccess, "for path:", path);

@@ -140,13 +140,13 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log("Fetching departments and positions...");
+        console.log('Fetching departments and positions...');
         await Promise.all([fetchDepartments(), fetchPositions()]);
-        console.log("Departments after fetch:", departments);
-        console.log("Positions after fetch:", positions);
+        console.log('Departments after fetch:', departments);
+        console.log('Positions after fetch:', positions);
       } catch (error) {
-        console.error("Error loading data:", error);
-        toast.error("Failed to load departments and positions");
+        console.error('Error loading data:', error);
+        toast.error('Failed to load departments and positions');
       }
     };
 
@@ -398,8 +398,8 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
                             {...formik.getFieldProps("department")}
                           >
                             <option value="">Select Department</option>
-                            {departments?.data?.departments &&
-                              departments.data.departments.map((dept) => (
+                            {Array.isArray(departments) &&
+                              departments.map((dept) => (
                                 <option
                                   key={dept.id || dept._id}
                                   value={dept.id || dept._id}
