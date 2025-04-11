@@ -487,10 +487,11 @@ const Attendance = () => {
         Cell: ({ row }) => (
           <div className="flex items-center space-x-3">
             <div>
-              <p className="font-medium text-gray-900">
-                {row.original.employee.firstName}{" "}
-                {row.original.employee.lastName}
-              </p>
+            <p className="font-medium text-gray-900">
+          {row.original.employee
+            ? `${row.original.employee.firstName} ${row.original.employee.lastName}`
+            : "Unknown Employee"}
+        </p>
               <p className="text-sm text-gray-500">
                 {row.original.employee.employeeId}
               </p>
@@ -642,7 +643,9 @@ const Attendance = () => {
   );
 
   const data = useMemo(() => {
-    return Array.isArray(attendance) ? attendance : [];
+    return Array.isArray(attendance)
+      ? attendance.filter((record) => record.employee != null)
+      : [];
   }, [attendance]);
 
   const {
