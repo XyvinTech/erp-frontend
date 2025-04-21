@@ -16,6 +16,7 @@ export const clientService = {
     try {
       const response = await api.get(BASE_URL);
       const data = response.data;
+      console.log('API response:', data);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       throw error;

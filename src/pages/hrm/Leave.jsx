@@ -27,6 +27,7 @@ const Leave = () => {
   });
 
   useEffect(() => {
+    console.log("Leaves state:", leaves); // Debug log
     fetchLeaves();
   }, [fetchLeaves]);
 
@@ -130,7 +131,10 @@ const Leave = () => {
   );
 
   const data = useMemo(() => {
-    if (!Array.isArray(leaves)) return [];
+    if (!Array.isArray(leaves)) {
+      console.log("Leaves is not an array:", leaves); // Debug log
+      return [];
+    }
     return leaves.map((leave) => ({
       ...leave,
       employee: leave.employee || null,
@@ -177,7 +181,6 @@ const Leave = () => {
   };
 
   const handleDelete = async (id) => {
-    // if (window.confirm('Are you sure you want to delete this leave request?')) {
     try {
       await deleteLeave(id);
       toast.success("Leave request deleted successfully");
@@ -187,7 +190,6 @@ const Leave = () => {
         error.response?.data?.message || "Failed to delete leave request"
       );
     }
-    // }
   };
 
   if (leavesLoading) {
@@ -210,16 +212,6 @@ const Leave = () => {
     <div className="space-y-4">
       <div className="flex justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Leave Requests</h2>
-        {/* <button
-          onClick={() => {
-            setSelectedLeave(null);
-            setShowModal(true);
-          }}
-          className="btn btn-primary inline-flex items-center"
-        >
-          <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-          Request Leave
-        </button> */}
       </div>
 
       <div className="overflow-x-auto">
@@ -267,32 +259,42 @@ const Leave = () => {
               className="divide-y divide-gray-200 bg-white"
               {...getTableBodyProps()}
             >
-              {page.map((row) => {
-                prepareRow(row);
-                const { key, ...rowProps } = row.getRowProps();
-                return (
-                  <tr key={key} {...rowProps}>
-                    {row.cells.map((cell) => {
-                      const { key, ...cellProps } = cell.getCellProps();
-                      return (
-                        <td
-                          key={key}
-                          {...cellProps}
-                          className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
-                        >
-                          {cell.render("Cell")}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
+              {page.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="px-3 py-4 text-center text-gray-500"
+                  >
+                    No leave requests found.
+                  </td>
+                </tr>
+              ) : (
+                page.map((row) => {
+                  prepareRow(row);
+                  const { key, ...rowProps } = row.getRowProps();
+                  return (
+                    <tr key={key} {...rowProps}>
+                      {row.cells.map((cell) => {
+                        const { key, ...cellProps } = cell.getCellProps();
+                        return (
+                          <td
+                            key={key}
+                            {...cellProps}
+                            className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+                          >
+                            {cell.render("Cell")}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Pagination */}
       <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
         <div className="flex flex-1 justify-between sm:hidden">
           <button
@@ -338,7 +340,6 @@ const Leave = () => {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, leaveId: null })}

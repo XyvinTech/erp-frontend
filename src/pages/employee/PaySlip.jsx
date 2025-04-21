@@ -2,9 +2,9 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
+import useHrmStore from '@/stores/useHrmStore';
 
 const PaySlip = () => {
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -13,6 +13,8 @@ const PaySlip = () => {
   const [paySlipData, setPaySlipData] = useState(null);
   const [dataNotFound, setDataNotFound] = useState(false);
   const formRef = useRef(null);
+
+  const { getMyPayroll, payrollLoading, payrollError } = useHrmStore();
 
   // Get current date and last 6 months
   const getCurrentAndPast6Months = () => {
@@ -32,66 +34,94 @@ const PaySlip = () => {
       setLoading(true);
       setDataNotFound(false);
       setError(null);
-      const token = localStorage.getItem('token');
       const employeeData = JSON.parse(localStorage.getItem('user'));
 
       if (!employeeData || !employeeData.employeeId) {
         throw new Error('Employee data not found');
       }
 
-      // Convert month string to date format
+      // Convert month string to date format for comparison
       const [monthName, year] = month.split(' ');
-      const period = new Date(`${monthName} 1, ${year}`);
-
-      const response = await axios.get(`/hrm/payroll/my-payroll`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const selectedDate = new Date(Date.UTC(parseInt(year), new Date(`${monthName} 1, ${year}`).getMonth(), 1));
+      
+      console.log('Fetching payroll for:', {
+        month,
+        selectedDate: selectedDate.toISOString(),
+        employeeId: employeeData.employeeId
       });
 
-      if (!response.data.success) {
-        throw new Error(response.data.error?.message || 'Failed to fetch payroll data');
+      // Get all payroll data for the employee
+      const response = await getMyPayroll();
+      console.log('Payroll Response:', response);
+
+      if (!response || !response.success || !response.data) {
+        throw new Error('Failed to fetch payroll data');
       }
 
-      const payrollData = response.data.data.find(
-        (payroll) => format(new Date(payroll.period), 'MMMM yyyy') === month
-      );
+      // Convert the payroll data to array if it's not already
+      const payrollArray = Array.isArray(response.data) ? response.data : [response.data];
+
+      // Find the matching payroll for the selected month
+      const payrollData = payrollArray.find(payroll => {
+        if (!payroll || !payroll.period) return false;
+        const payrollDate = new Date(payroll.period);
+        return payrollDate.getMonth() === selectedDate.getMonth() && 
+               payrollDate.getFullYear() === selectedDate.getFullYear();
+      });
 
       if (!payrollData) {
+        console.log('No payroll found for period:', month);
         setDataNotFound(true);
         setPaySlipData(null);
         toast.error('No payroll data found for selected month');
         return;
       }
 
+      console.log('Found matching payroll data:', payrollData);
+
+      // Helper function to safely format dates
+      const safeFormatDate = (dateString) => {
+        try {
+          if (!dateString) return 'N/A';
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return 'N/A';
+          return format(date, 'dd-MM-yyyy');
+        } catch (error) {
+          console.warn('Error formatting date:', error);
+          return 'N/A';
+        }
+      };
+
       setPaySlipData({
         employeeDetails: {
           name: `${employeeData.firstName} ${employeeData.lastName}`,
           employeeId: employeeData.employeeId,
-          department: payrollData.employee.department.name,
-          designation: payrollData.employee.position.title,
-          contactNumber: employeeData.phone,
-          email: employeeData.email,
-          joiningDate: format(new Date(employeeData.joiningDate), 'dd-MM-yyyy')
+          department: payrollData.employee.department?.name || 'N/A',
+          position: payrollData.employee.position?.title || 'N/A',
+          contactNumber: payrollData.employee.phone || 'N/A',
+          email: payrollData.employee.email,
+          joiningDate: safeFormatDate(payrollData.employee.joiningDate)
         },
         paymentDetails: {
           bankAccount: employeeData.bankDetails?.accountNumber || 'N/A',
           bankName: employeeData.bankDetails?.bankName || 'N/A',
           payPeriod: month,
-          paymentDate: format(new Date(payrollData.updatedAt), 'dd-MM-yyyy')
+          paymentDate: safeFormatDate(payrollData.updatedAt)
         },
         earnings: {
-          basicSalary: payrollData.basicSalary,
-          transportAllowance: payrollData.allowances.transport,
-          mobile: payrollData.allowances.mobile,
-          bonus: payrollData.allowances.bonus
+          basicSalary: payrollData.basicSalary || 0,
+          transportAllowance: payrollData.allowances?.transport || 0,
+          mobile: payrollData.allowances?.mobile || 0,
+          bonus: payrollData.allowances?.bonus || 0
         },
         deductions: {
-          providentFund: payrollData.deductions.pf,
-          other: payrollData.deductions.other
+          providentFund: payrollData.deductions?.pf || 0,
+          other: payrollData.deductions?.other || 0
         }
       });
     } catch (err) {
       console.error('Error fetching payroll data:', err);
-      const errorMessage = err.response?.data?.error?.message || err.message || 'Failed to fetch payroll data';
+      const errorMessage = err.message || 'Failed to fetch payroll data';
       toast.error(errorMessage);
       setError(errorMessage);
       setPaySlipData(null);
@@ -111,6 +141,17 @@ const PaySlip = () => {
     // Set initial month to current month
     setSelectedMonth(months[0]);
   }, []);
+
+  // Use loading state from both local and store
+  const isLoading = loading || payrollLoading;
+
+  // Use error state from both local and store
+  useEffect(() => {
+    if (payrollError) {
+      setError(payrollError);
+      toast.error(payrollError);
+    }
+  }, [payrollError]);
 
   const totalEarnings = Object.values(paySlipData?.earnings || {}).reduce((a, b) => a + b, 0);
   const totalDeductions = Object.values(paySlipData?.deductions || {}).reduce((a, b) => a + b, 0);
@@ -317,8 +358,8 @@ const PaySlip = () => {
                     <span className="text-right">{paySlipData.employeeDetails.department}</span>
                   </div>
                   <div className="flex flex-col sm:flex-row justify-between gap-2">
-                    <span className="text-gray-600 font-medium">Designation:</span>
-                    <span className="text-right">{paySlipData.employeeDetails.designation}</span>
+                    <span className="text-gray-600 font-medium">Position:</span>
+                    <span className="text-right">{paySlipData.employeeDetails.position}</span>
                   </div>
                   <div className="flex flex-col sm:flex-row justify-between gap-2">
                     <span className="text-gray-600 font-medium">Joining Date:</span>

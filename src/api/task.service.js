@@ -55,7 +55,7 @@ export const taskService = {
         console.warn('No projectId provided to getProjectTasks');
         return [];
       }
-      const response = await api.get(`/api/tasks/project/${projectId}`);
+      const response = await api.get(`/tasks/project/${projectId}`);
       console.log('Project tasks response:', response.data);
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {

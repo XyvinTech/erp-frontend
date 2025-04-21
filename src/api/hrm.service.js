@@ -117,12 +117,22 @@ export const createBulkAttendance = async (data) => {
     return response.data;
 };
 
+// export const getLeaves = async () => {
+//     const response = await api.get('hrm/leaves');
+//     // Ensure we return an array
+//     const leaves = response.data?.leaves || response.data;
+//     return Array.isArray(leaves) ? leaves : [];
+// };
+
 export const getLeaves = async () => {
-    const response = await api.get('hrm/leaves');
-    // Ensure we return an array
-    const leaves = response.data?.leaves || response.data;
-    return Array.isArray(leaves) ? leaves : [];
-};
+    try {
+      const response = await api.get('hrm/leaves');
+      return Array.isArray(response.data.data.leaves) ? response.data.data.leaves : [];
+    } catch (error) {
+      console.error("Error fetching leaves:", error);
+      return [];
+    }
+  };
 
 export const getMyLeave = async () => {
     const response = await api.get('hrm/leaves/my');
@@ -170,6 +180,11 @@ export const reviewLeave = async (id, data) => {
 export const getPayroll = async () => {
     const response = await api.get('hrm/payroll');
     return response.data?.data || [];
+};
+
+export const getMyPayroll = async () => {
+    const response = await api.get('hrm/payroll/my-payroll');
+    return response.data;
 };
 
 export const getPayrollById = async (id) => {

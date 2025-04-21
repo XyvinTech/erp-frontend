@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useTable, useSortBy, usePagination } from "react-table";
 import { toast } from "react-hot-toast";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import {
   ChevronUpIcon,
   ChevronDownIcon,
@@ -196,6 +197,10 @@ const Attendance = () => {
     onLeave: 0,
     absent: 0,
     late: 0,
+    earlyLeave: 0,
+    holiday: 0,
+    dayOff: 0,
+    totalWorkHours: 0,
     changes: {
       employees: "0%",
       present: "0%",
@@ -203,6 +208,10 @@ const Attendance = () => {
       leave: "0%",
       absent: "0%",
       late: "0%",
+      earlyLeave: "0%",
+      holiday: "0%",
+      dayOff: "0%",
+      totalWorkHours: "0%",
     },
   });
 
@@ -239,117 +248,82 @@ const Attendance = () => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        // Get current month's date range
-        const startDate = new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth(),
-          1
-        );
-        const endDate = new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth() + 1,
-          0
-        );
+        // Format dates properly
+        const startDate = startOfMonth(currentDate);
+        const endDate = endOfMonth(currentDate);
 
-        // Get current month's stats
-        const currentMonthStats = attendance.filter((record) => {
-          const recordDate = new Date(record.date);
-          return (
-            recordDate.getMonth() === currentDate.getMonth() &&
-            recordDate.getFullYear() === currentDate.getFullYear()
-          );
+        // Ensure valid dates before making the request
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          console.error('Invalid date range');
+          toast.error('Invalid date range for statistics');
+          return;
+        }
+
+        const response = await getAttendanceStats({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
         });
 
-        // Calculate current month's counts
-        const uniqueEmployees = new Set(
-          currentMonthStats.map((record) => record.employee._id)
-        );
-        const totalEmployees = uniqueEmployees.size;
-        const presentCount = currentMonthStats.filter(
-          (record) => record.status === "Present"
-        ).length;
-        const halfDayCount = currentMonthStats.filter(
-          (record) => record.status === "Half-Day"
-        ).length;
-        const leaveCount = currentMonthStats.filter(
-          (record) => record.status === "On-Leave"
-        ).length;
-        const absentCount = currentMonthStats.filter(
-          (record) => record.status === "Absent"
-        ).length;
-        const lateCount = currentMonthStats.filter(
-          (record) => record.status === "Late"
-        ).length;
+        console.log('API Response:', response); // Debug log
 
-        // Get previous month's date range
-        const prevMonth = new Date(currentDate);
-        prevMonth.setMonth(prevMonth.getMonth() - 1);
-        const prevMonthStats = attendance.filter((record) => {
-          const recordDate = new Date(record.date);
-          return (
-            recordDate.getMonth() === prevMonth.getMonth() &&
-            recordDate.getFullYear() === prevMonth.getFullYear()
-          );
-        });
+        if (response?.data) {
+          const { stats: apiStats, totalEmployees, changes } = response.data;
+          
+          // Update stats state with the correct mapping
+          setStats({
+            totalEmployees: totalEmployees || 0,
+            presentCount: apiStats?.present || 0,
+            halfDay: apiStats?.halfDay || 0,
+            onLeave: apiStats?.onLeave || 0,
+            absent: apiStats?.absent || 0,
+            late: apiStats?.late || 0,
+            earlyLeave: apiStats?.earlyLeave || 0,
+            holiday: apiStats?.holiday || 0,
+            dayOff: apiStats?.dayOff || 0,
+            totalWorkHours: Number(apiStats?.totalWorkHours?.toFixed(2)) || 0,
+            changes: {
+              employees: changes?.employees || '0%',
+              present: changes?.present || '0%',
+              halfDay: changes?.halfDay || '0%',
+              leave: changes?.onLeave || '0%',
+              absent: changes?.absent || '0%',
+              late: changes?.late || '0%',
+              earlyLeave: changes?.earlyLeave || '0%',
+              holiday: changes?.holiday || '0%',
+              dayOff: changes?.dayOff || '0%',
+              totalWorkHours: changes?.totalWorkHours || '0%'
+            }
+          });
 
-        // Calculate previous month's counts
-        const prevUniqueEmployees = new Set(
-          prevMonthStats.map((record) => record.employee._id)
-        );
-        const prevTotalEmployees = prevUniqueEmployees.size;
-        const prevPresentCount = prevMonthStats.filter(
-          (record) => record.status === "Present"
-        ).length;
-        const prevHalfDayCount = prevMonthStats.filter(
-          (record) => record.status === "Half-Day"
-        ).length;
-        const prevLeaveCount = prevMonthStats.filter(
-          (record) => record.status === "On-Leave"
-        ).length;
-        const prevAbsentCount = prevMonthStats.filter(
-          (record) => record.status === "Absent"
-        ).length;
-        const prevLateCount = prevMonthStats.filter(
-          (record) => record.status === "Late"
-        ).length;
-
-        // Calculate percentage changes
-        const calculateChange = (current, previous) => {
-          if (previous === 0) {
-            return current > 0 ? "+100%" : "0%";
+          // Update attendance records if available
+          if (Array.isArray(apiStats?.records)) {
+            const formattedRecords = apiStats.records.map(record => ({
+              ...record,
+              date: new Date(record.date).toISOString(),
+              checkIn: record.checkIn ? {
+                ...record.checkIn,
+                time: record.checkIn.time ? new Date(record.checkIn.time).toISOString() : null
+              } : null,
+              checkOut: record.checkOut ? {
+                ...record.checkOut,
+                time: record.checkOut.time ? new Date(record.checkOut.time).toISOString() : null
+              } : null
+            }));
+            useHrmStore.setState({ 
+              attendance: formattedRecords,
+              attendanceStats: apiStats,
+              totalEmployees: totalEmployees
+            });
           }
-          const change = ((current - previous) / previous) * 100;
-          return `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
-        };
-
-        const newStats = {
-          totalEmployees: totalEmployees || 0,
-          presentCount: presentCount || 0,
-          halfDay: halfDayCount || 0,
-          onLeave: leaveCount || 0,
-          absent: absentCount || 0,
-          late: lateCount || 0,
-          changes: {
-            employees: calculateChange(totalEmployees, prevTotalEmployees),
-            present: calculateChange(presentCount, prevPresentCount),
-            halfDay: calculateChange(halfDayCount, prevHalfDayCount),
-            leave: calculateChange(leaveCount, prevLeaveCount),
-            absent: calculateChange(absentCount, prevAbsentCount),
-            late: calculateChange(lateCount, prevLateCount),
-          },
-        };
-
-        setStats(newStats);
+        }
       } catch (error) {
-        console.error("Failed to load stats:", error);
-        toast.error("Failed to load attendance statistics");
+        console.error('Error loading attendance stats:', error);
+        toast.error('Failed to load attendance statistics');
       }
     };
 
-    if (Array.isArray(attendance) && attendance.length > 0) {
-      loadStats();
-    }
-  }, [currentDate, attendance]); // Run when currentDate or attendance changes
+    loadStats();
+  }, [currentDate, getAttendanceStats]);
 
   const handleCheckIn = async () => {
     try {
@@ -704,28 +678,28 @@ const Attendance = () => {
           title="Total Employees"
           value={stats.totalEmployees}
           change={stats.changes.employees}
-          isIncrease={stats.changes.employees.startsWith("+")}
+          isIncrease={!stats.changes.employees.startsWith('-')}
         />
         <SummaryCard
           icon={CheckIcon}
           title={`Present (${formatMonthYear(currentDate)})`}
           value={stats.presentCount}
           change={stats.changes.present}
-          isIncrease={stats.changes.present.startsWith("+")}
+          isIncrease={!stats.changes.present.startsWith('-')}
         />
         <SummaryCard
           icon={ClockIcon}
           title={`Late (${formatMonthYear(currentDate)})`}
           value={stats.late}
           change={stats.changes.late}
-          isIncrease={stats.changes.late.startsWith("+")}
+          isIncrease={!stats.changes.late.startsWith('-')}
         />
         <SummaryCard
           icon={XMarkIcon}
           title={`Absent (${formatMonthYear(currentDate)})`}
           value={stats.absent}
           change={stats.changes.absent}
-          isIncrease={stats.changes.absent.startsWith("+")}
+          isIncrease={!stats.changes.absent.startsWith('-')}
         />
       </div>
 

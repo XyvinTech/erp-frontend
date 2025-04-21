@@ -17,6 +17,7 @@ const useClientStore = create((set, get) => ({
         clientService.getClients(),
         projectService.getProjects()
       ]);
+      console.log('Fetched clients in store:', clients),
 
       console.log('fetchClients result:', { clients, projects });
 

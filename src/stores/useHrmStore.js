@@ -615,6 +615,27 @@ const useHrmStore = create(
         }
       },
 
+      getMyPayroll: async () => {
+        set({ payrollLoading: true, payrollError: null });
+        try {
+          const response = await hrmService.getMyPayroll();
+          console.log('My Payroll Response:', response);
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to fetch payroll data');
+          }
+          return response;
+        } catch (error) {
+          console.error('Error fetching my payroll:', error);
+          set({
+            payrollError: error.response?.data?.message || error.message || 'Failed to fetch payroll',
+            payrollLoading: false
+          });
+          throw error;
+        } finally {
+          set({ payrollLoading: false });
+        }
+      },
+
       fetchPayrollById: async (id) => {
         set({ payrollLoading: true, payrollError: null });
         try {

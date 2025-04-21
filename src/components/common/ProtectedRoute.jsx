@@ -119,6 +119,7 @@ const ProtectedRoute = () => {
       "/",
       "/dashboard",
       "/profile",
+      "/employee",
       "/projects",
       "/projects/list",
       "/projects/details",

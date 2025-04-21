@@ -64,24 +64,22 @@ const PositionModal = ({ isOpen, onClose, position, onSuccess }) => {
   useEffect(() => {
     const fetchPositionCode = async () => {
       if (!position) {
-        // Only fetch new code when creating new position
         try {
           const response = await getNextPositionCode();
-          const code = response?.data?.position?.code || response?.data?.code;
-          if (code) {
-            setValue("code", code);
+          if (response?.data?.position?.code) {
+            setValue("code", response.data.position.code);
           } else {
-            throw new Error("Invalid response format");
+            throw new Error("Invalid position code received");
           }
         } catch (error) {
           console.error("Error fetching position code:", error);
-          toast.error("Failed to generate position code");
+          toast.error("Failed to generate position code. Please try again.");
         }
       }
     };
 
     fetchPositionCode();
-  }, [position, setValue]);
+  }, [position, setValue, getNextPositionCode]);
 
   const onSubmit = async (data) => {
     try {
