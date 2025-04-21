@@ -27,6 +27,11 @@ export const deleteEmployee = async (id) => {
     return response.data;
 };
 
+export const updateCurrentEmployee = async (data) => {
+    const response = await api.patch(`hrm/employees/me`, data);
+    return response.data;
+};
+
 // Departments
 export const getDepartments = async () => {
     const response = await api.get('hrm/departments');
@@ -267,6 +272,11 @@ export const updateEvent = async (id, data) => {
 
 export const deleteEvent = async (id) => {
     const response = await api.delete(`hrm/events/${id}`);
+    return response.data;
+};
+
+export const deleteAttendance = async (id) => {
+    const response = await api.delete(`hrm/attendance/${id}`);
     return response.data;
 };
 

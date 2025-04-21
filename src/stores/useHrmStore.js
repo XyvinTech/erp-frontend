@@ -173,6 +173,17 @@ const useHrmStore = create(
         }
       },
 
+      // Update current employee profile
+      updateProfile: async (data) => {
+        try {
+          const response = await hrmService.updateCurrentEmployee(data);
+          return response;
+        } catch (error) {
+          console.error('Error updating profile:', error);
+          throw error;
+        }
+      },
+
       // Department Actions
       fetchDepartments: async () => {
         set({ departmentsLoading: true, departmentsError: null });

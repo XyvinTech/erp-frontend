@@ -67,7 +67,7 @@ const Profile = () => {
       } else {
         // Remove any leading slashes and construct the full URL
         const cleanPath = picturePath.replace(/^\/+/, "");
-        setProfilePicUrl(`${import.meta.env.VITE_API_URL}/${cleanPath}`);
+        setProfilePicUrl(`${import.meta.env.VITE_API_URL}/public/${cleanPath}`);
       }
     } else {
       setProfilePicUrl("/assets/images/default-avatar.png");
@@ -288,7 +288,7 @@ const Profile = () => {
                   className="w-full h-full object-cover transition-transform group-hover:scale-110"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = "/assets/images/default-avatar.png";
+                    // e.target.src = "/assets/images/default-avatar.png";
                   }}
                 />
               </div>
