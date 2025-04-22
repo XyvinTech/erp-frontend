@@ -8,44 +8,21 @@ const useClientStore = create((set, get) => ({
   loading: false,
   error: null,
 
-  // Fetch all clients with their projects
+  // Fetch all clients
   fetchClients: async () => {
     set({ loading: true, error: null });
     try {
-      // Fetch clients and projects in parallel
-      const [clients, projects] = await Promise.all([
-        clientService.getClients(),
-        projectService.getProjects()
-      ]);
-      console.log('Fetched clients in store:', clients),
+      const clients = await clientService.getClients();
+      console.log('Fetched clients:', clients);
 
-      console.log('fetchClients result:', { clients, projects });
-
-      // Ensure we have arrays
-      const validClients = Array.isArray(clients) ? clients : [];
-      const validProjects = Array.isArray(projects) ? projects : [];
-
-      // Create a map of client IDs to their projects
-      const clientProjects = validProjects.reduce((acc, project) => {
-        const clientId = project.client;
-        if (clientId) {
-          if (!acc[clientId]) {
-            acc[clientId] = [];
-          }
-          acc[clientId].push(project);
-        }
-        return acc;
-      }, {});
-
-      // Add projects to each client
-      const clientsWithProjects = validClients.map(client => ({
+      // Ensure we have an array and all clients have required fields
+      const validClients = Array.isArray(clients) ? clients.map(client => ({
         ...client,
-        projects: clientProjects[client._id || client.id] || []
-      }));
+        projects: client.projects || []
+      })) : [];
 
-      console.log('Setting clients in store:', clientsWithProjects);
-
-      set({ clients: clientsWithProjects, loading: false });
+      set({ clients: validClients, loading: false });
+      return validClients;
     } catch (error) {
       console.error('Error in fetchClients:', error);
       set({ error: error.message, loading: false });

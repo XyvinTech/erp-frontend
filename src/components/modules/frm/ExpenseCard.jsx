@@ -3,62 +3,76 @@ import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const ExpenseCard = ({ expense, onEdit, onDelete, formatCurrency }) => {
   return (
-    <div className="bg-white shadow rounded-lg p-4 mb-4">
-      <div className="flex justify-between items-start mb-4">
+    <div className="bg-white shadow rounded-lg p-4 space-y-4">
+      <div className="flex justify-between items-start">
         <div>
-          <p className="text-sm font-medium text-gray-500">Expense No.</p>
-          <p className="text-sm font-semibold text-gray-900">{expense.expenseNumber}</p>
+          <h3 className="text-lg font-medium text-gray-900">
+            {expense.expenseNumber}
+          </h3>
+          <p className="text-sm text-gray-500">{expense.description}</p>
         </div>
-        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-          expense.status === 'Approved' ? 'bg-green-100 text-green-800' :
-          expense.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-red-100 text-red-800'
-        }`}>
+        <span
+          className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+            expense.status === 'Approved' ? 'bg-green-100 text-green-800' :
+            expense.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+            'bg-red-100 text-red-800'
+          }`}
+        >
           {expense.status}
         </span>
       </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-sm font-medium text-gray-500">Description</p>
-          <p className="text-sm text-gray-900">{expense.description}</p>
+          <p className="text-sm font-medium text-gray-500">Amount</p>
+          <p className="mt-1 text-sm text-gray-900">
+            {formatCurrency(expense.amount)}
+          </p>
         </div>
-
-        <div className="flex justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-500">Amount</p>
-            <p className="text-sm text-gray-900">{formatCurrency(expense.amount)}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500">Date</p>
-            <p className="text-sm text-gray-900">{format(new Date(expense.date), 'MMM d, yyyy')}</p>
-          </div>
+        <div>
+          <p className="text-sm font-medium text-gray-500">Date</p>
+          <p className="mt-1 text-sm text-gray-900">
+            {format(new Date(expense.date), 'MMM d, yyyy')}
+          </p>
         </div>
-
         <div>
           <p className="text-sm font-medium text-gray-500">Category</p>
-          <p className="text-sm text-gray-900 capitalize">{expense.category}</p>
+          <p className="mt-1 text-sm text-gray-900">
+            {expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-500">Notes</p>
+          <p className="mt-1 text-sm text-gray-900 truncate" title={expense.notes}>
+            {expense.notes || "No notes"}
+          </p>
         </div>
       </div>
 
-      {expense.status === 'Pending' && (
-        <div className="mt-4 flex justify-end space-x-3 border-t pt-4">
-          <button
-            onClick={() => onEdit(expense)}
-            className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-gray-900"
-          >
-            <PencilIcon className="h-4 w-4 mr-1" />
-            Edit
-          </button>
+      <div className="flex justify-end space-x-2 pt-2 border-t border-gray-200">
+        <button
+          onClick={() => onEdit(expense)}
+          className="text-black hover:text-gray-800"
+        >
+          <PencilIcon className="h-5 w-5" aria-hidden="true" />
+        </button>
+        {expense.status === "Pending" ? (
           <button
             onClick={() => onDelete(expense)}
-            className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-900"
+            className="text-red-600 hover:text-red-900"
           >
-            <TrashIcon className="h-4 w-4 mr-1" />
-            Delete
+            <TrashIcon className="h-5 w-5" aria-hidden="true" />
           </button>
-        </div>
-      )}
+        ) : (
+          <button
+            disabled
+            className="text-gray-300 cursor-not-allowed"
+            title="Only pending expenses can be deleted"
+          >
+            <TrashIcon className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
+      </div>
     </div>
   );
 };

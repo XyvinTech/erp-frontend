@@ -205,7 +205,7 @@ const Attendance = () => {
       employees: "0%",
       present: "0%",
       halfDay: "0%",
-      leave: "0%",
+      onLeave: "0%",
       absent: "0%",
       late: "0%",
       earlyLeave: "0%",
@@ -248,11 +248,9 @@ const Attendance = () => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        // Format dates properly
         const startDate = startOfMonth(currentDate);
         const endDate = endOfMonth(currentDate);
 
-        // Ensure valid dates before making the request
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           console.error('Invalid date range');
           toast.error('Invalid date range for statistics');
@@ -264,12 +262,9 @@ const Attendance = () => {
           endDate: endDate.toISOString(),
         });
 
-        console.log('API Response:', response); // Debug log
-
         if (response?.data) {
           const { stats: apiStats, totalEmployees, changes } = response.data;
           
-          // Update stats state with the correct mapping
           setStats({
             totalEmployees: totalEmployees || 0,
             presentCount: apiStats?.present || 0,
@@ -285,7 +280,7 @@ const Attendance = () => {
               employees: changes?.employees || '0%',
               present: changes?.present || '0%',
               halfDay: changes?.halfDay || '0%',
-              leave: changes?.onLeave || '0%',
+              onLeave: changes?.onLeave || '0%',
               absent: changes?.absent || '0%',
               late: changes?.late || '0%',
               earlyLeave: changes?.earlyLeave || '0%',
@@ -295,22 +290,9 @@ const Attendance = () => {
             }
           });
 
-          // Update attendance records if available
           if (Array.isArray(apiStats?.records)) {
-            const formattedRecords = apiStats.records.map(record => ({
-              ...record,
-              date: new Date(record.date).toISOString(),
-              checkIn: record.checkIn ? {
-                ...record.checkIn,
-                time: record.checkIn.time ? new Date(record.checkIn.time).toISOString() : null
-              } : null,
-              checkOut: record.checkOut ? {
-                ...record.checkOut,
-                time: record.checkOut.time ? new Date(record.checkOut.time).toISOString() : null
-              } : null
-            }));
             useHrmStore.setState({ 
-              attendance: formattedRecords,
+              attendance: apiStats.records,
               attendanceStats: apiStats,
               totalEmployees: totalEmployees
             });

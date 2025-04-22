@@ -43,11 +43,54 @@ const ExpenseList = () => {
   const fetchExpenses = async () => {
     try {
       setLoading(true);
-      const data = await frmService.getExpenses(filters);
+      console.log('Fetching expenses with filters:', filters);
+      
+      // Clean up filters
+      const cleanFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
+      
+      console.log('Clean filters:', cleanFilters);
+      
+      const data = await frmService.getExpenses(cleanFilters);
+      console.log('Received expenses data:', data);
+      
+      if (!Array.isArray(data)) {
+        console.error('Expected array of expenses but received:', typeof data);
+        toast.error('Failed to load expenses. Please try again.');
+        setExpenses([]);
+        setStats({
+          totalAmount: 0,
+          totalCount: 0,
+          paidAmount: 0,
+          paidCount: 0,
+          pendingAmount: 0,
+          pendingCount: 0,
+        });
+        return;
+      }
+
       setExpenses(data);
       calculateStats(data);
     } catch (error) {
-      toast.error(error.message || "Failed to fetch expenses");
+      console.error('Error fetching expenses:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      toast.error(error.response?.data?.message || error.message || "Failed to fetch expenses");
+      setExpenses([]);
+      setStats({
+        totalAmount: 0,
+        totalCount: 0,
+        paidAmount: 0,
+        paidCount: 0,
+        pendingAmount: 0,
+        pendingCount: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -80,7 +123,27 @@ const ExpenseList = () => {
   };
 
   useEffect(() => {
-    fetchExpenses();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No authentication token found');
+      toast.error('Please login to view expenses');
+      window.location.href = '/login';
+      return;
+    }
+
+    const loadExpenses = async () => {
+      try {
+        await fetchExpenses();
+      } catch (error) {
+        if (error.response?.status === 401) {
+          toast.error('Session expired. Please login again.');
+          localStorage.clear();
+          window.location.href = '/login';
+        }
+      }
+    };
+
+    loadExpenses();
   }, [filters]);
 
   const handleSubmit = async (data) => {
@@ -156,6 +219,7 @@ const ExpenseList = () => {
       category: expense.category,
       notes: expense.notes || "",
       status: expense.status,
+      documents: expense.documents || []
     };
     setEditingExpense({ ...formattedExpense, _id: expense._id });
     setShowExpenseForm(true);
@@ -167,17 +231,30 @@ const ExpenseList = () => {
 
   const confirmDelete = async () => {
     try {
+      setLoading(true);
+      console.log('Attempting to delete expense:', {
+        id: deleteModal.expense._id,
+        status: deleteModal.expense.status,
+        description: deleteModal.expense.description
+      });
       await frmService.deleteExpense(deleteModal.expense._id);
       toast.success("Expense deleted successfully");
-      fetchExpenses();
+      await fetchExpenses();
     } catch (error) {
-      console.error("Delete error:", error);
+      console.error("Delete error:", {
+        error,
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        expense: deleteModal.expense
+      });
       toast.error(
+        error.message || 
         error.response?.data?.message ||
-          error.message ||
-          "Failed to delete expense"
+        "Failed to delete expense. Please try again."
       );
     } finally {
+      setLoading(false);
       setDeleteModal({ isOpen: false, expense: null });
     }
   };
@@ -209,6 +286,21 @@ const ExpenseList = () => {
         Cell: ({ value }) => value.charAt(0).toUpperCase() + value.slice(1),
       },
       {
+        Header: "Notes",
+        accessor: "notes",
+        Cell: ({ value }) => (
+          <div className="max-w-xs overflow-hidden">
+            {value ? (
+              <span className="block truncate" title={value}>
+                {value}
+              </span>
+            ) : (
+              <span className="text-gray-400">No notes</span>
+            )}
+          </div>
+        ),
+      },
+      {
         Header: "Status",
         accessor: "status",
         Cell: ({ value }) => (
@@ -235,12 +327,22 @@ const ExpenseList = () => {
             >
               <PencilIcon className="h-5 w-5" aria-hidden="true" />
             </button>
-            <button
-              onClick={() => handleDelete(row.original)}
-              className="text-red-600 hover:text-red-900"
-            >
-              <TrashIcon className="h-5 w-5" aria-hidden="true" />
-            </button>
+            {row.original.status === "Pending" ? (
+              <button
+                onClick={() => handleDelete(row.original)}
+                className="text-red-600 hover:text-red-900"
+              >
+                <TrashIcon className="h-5 w-5" aria-hidden="true" />
+              </button>
+            ) : (
+              <button
+                disabled
+                className="text-gray-300 cursor-not-allowed"
+                title="Only pending expenses can be deleted"
+              >
+                <TrashIcon className="h-5 w-5" aria-hidden="true" />
+              </button>
+            )}
           </div>
         ),
       },
@@ -248,7 +350,10 @@ const ExpenseList = () => {
     []
   );
 
-  const data = useMemo(() => expenses, [expenses]);
+  const data = useMemo(() => {
+    console.log('Preparing table data with expenses:', expenses);
+    return expenses || [];
+  }, [expenses]);
 
   const {
     getTableProps,
@@ -299,18 +404,25 @@ const ExpenseList = () => {
           {...getTableProps()}
         >
           <thead className="bg-gray-50">
-            {headerGroups.map((headerGroup) => (
-              <tr {...headerGroup.getHeaderGroupProps()}>
-                {headerGroup.headers.map((column) => (
-                  <th
-                    {...column.getHeaderProps()}
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                  >
-                    {column.render("Header")}
-                  </th>
-                ))}
-              </tr>
-            ))}
+            {headerGroups.map((headerGroup) => {
+              const { key, ...headerGroupProps } = headerGroup.getHeaderGroupProps();
+              return (
+                <tr key={key} {...headerGroupProps}>
+                  {headerGroup.headers.map((column) => {
+                    const { key, ...columnProps } = column.getHeaderProps();
+                    return (
+                      <th
+                        key={key}
+                        {...columnProps}
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        {column.render("Header")}
+                      </th>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </thead>
           <tbody
             className="divide-y divide-gray-200 bg-white"
@@ -318,16 +430,21 @@ const ExpenseList = () => {
           >
             {page.map((row) => {
               prepareRow(row);
+              const { key, ...rowProps } = row.getRowProps();
               return (
-                <tr {...row.getRowProps()}>
-                  {row.cells.map((cell) => (
-                    <td
-                      {...cell.getCellProps()}
-                      className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
-                    >
-                      {cell.render("Cell")}
-                    </td>
-                  ))}
+                <tr key={key} {...rowProps}>
+                  {row.cells.map((cell) => {
+                    const { key, ...cellProps } = cell.getCellProps();
+                    return (
+                      <td
+                        key={key}
+                        {...cellProps}
+                        className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+                      >
+                        {cell.render("Cell")}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}

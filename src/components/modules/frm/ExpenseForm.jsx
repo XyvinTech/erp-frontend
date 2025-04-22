@@ -24,8 +24,6 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
     },
   });
 
-  const [canUpdateStatus, setCanUpdateStatus] = useState(false);
-
   useEffect(() => {
     if (open) {
       if (initialData) {
@@ -61,13 +59,6 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
         fetchNextExpenseNumber();
       }
     }
-
-    // Check user permissions when component mounts
-    const user = JSON.parse(localStorage.getItem("user"));
-    setCanUpdateStatus(
-      user?.permissions?.includes("UPDATE_EXPENSE_STATUS") ||
-        user?.role === "admin"
-    );
   }, [open, initialData, setValue, reset, setOpen]);
 
   const handleFormSubmit = async (data) => {
@@ -256,42 +247,30 @@ const ExpenseForm = ({ open, setOpen, onSubmit, initialData = null }) => {
                         )}
                       </div>
 
-                      {(canUpdateStatus || !initialData) && (
-                        <div>
-                          <label
-                            htmlFor="status"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Status
-                          </label>
-                          <select
-                            id="status"
-                            {...register("status", {
-                              required: "Status is required",
-                            })}
-                            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
-                              !canUpdateStatus && initialData
-                                ? "bg-gray-100"
-                                : ""
-                            }`}
-                            disabled={!canUpdateStatus && initialData}
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
-                          {errors.status && (
-                            <p className="mt-1 text-sm text-red-600">
-                              {errors.status.message}
-                            </p>
-                          )}
-                          {!canUpdateStatus && initialData && (
-                            <p className="mt-1 text-sm text-gray-500">
-                              You don't have permission to change the status
-                            </p>
-                          )}
-                        </div>
-                      )}
+                      <div>
+                        <label
+                          htmlFor="status"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          Status
+                        </label>
+                        <select
+                          id="status"
+                          {...register("status", {
+                            required: "Status is required",
+                          })}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Approved">Approved</option>
+                          <option value="Rejected">Rejected</option>
+                        </select>
+                        {errors.status && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.status.message}
+                          </p>
+                        )}
+                      </div>
 
                       <div>
                         <label

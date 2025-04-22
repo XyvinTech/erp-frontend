@@ -54,8 +54,57 @@ const createExpense = async (expenseData) => {
 };
 
 const getExpenses = async (filters = {}) => {
-  const response = await api.get(EXPENSE_URL, { params: filters });
-  return response.data;
+  try {
+    console.log('Calling getExpenses with filters:', filters);
+    
+    // Clean up filters before sending
+    const cleanFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+      if (value !== '' && value !== null && value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+
+    console.log('Clean filters:', cleanFilters);
+    
+    const response = await api.get(EXPENSE_URL, { params: cleanFilters });
+    
+    console.log('Raw API response:', response);
+    
+    if (!response || !response.data) {
+      console.error('No data received from server');
+      throw new Error('No data received from server');
+    }
+
+    // Handle both array and object responses
+    const expenses = Array.isArray(response.data) 
+      ? response.data 
+      : response.data.data || [];
+    
+    if (!Array.isArray(expenses)) {
+      console.error('Expected array but received:', typeof expenses);
+      throw new Error('Invalid data format received from server');
+    }
+
+    // Validate and transform expense data
+    const validatedExpenses = expenses.map(expense => ({
+      ...expense,
+      amount: Number(expense.amount) || 0,
+      date: expense.date ? new Date(expense.date).toISOString() : new Date().toISOString(),
+      status: expense.status || 'Pending',
+      category: expense.category || 'other'
+    }));
+
+    console.log('Processed expenses data:', validatedExpenses);
+    return validatedExpenses;
+  } catch (error) {
+    console.error('Error in getExpenses:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
+  }
 };
 
 const getExpenseById = async (id) => {
@@ -86,8 +135,31 @@ const updateExpense = async (id, formData) => {
 };
 
 const deleteExpense = async (id) => {
-  const response = await api.delete(`${EXPENSE_URL}/${id}`);
-  return response.data;
+  try {
+    console.log('Deleting expense:', id);
+    const response = await api.delete(`${EXPENSE_URL}/${id}`);
+    console.log('Delete response:', response);
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to delete expense');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Delete expense error details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
+    // Handle specific error cases
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('Request timed out. Please try again.');
+    }
+    
+    throw error.response?.data || error;
+  }
 };
 
 const processExpense = async (id, { status, notes }) => {

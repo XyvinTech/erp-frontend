@@ -73,23 +73,25 @@ const MyAttendance = () => {
       const endDate = format(endOfMonth(currentMonth), "yyyy-MM-dd");
       const store = useHrmStore.getState();
       const response = await store.getMyAttendance({ startDate, endDate });
-      const { attendance, stats: monthlyStats } = response.data;
+      const { attendance, overallStats, monthlyStats } = response.data;
 
       setMonthlyAttendance(attendance);
+      
+      // Use the current month and year to get the correct monthly stats
+      const currentMonthYear = format(currentMonth, "MMMM yyyy");
+      const currentMonthStats = monthlyStats[currentMonthYear] || overallStats;
+
       setStats({
-        total: attendance.length,
-        present: monthlyStats.present || 0,
-        absent: monthlyStats.absent || 0,
-        late: monthlyStats.late || 0,
-        halfDay: attendance.filter((a) => a.status === "Half-Day").length,
-        earlyLeave: attendance.filter((a) => a.status === "Early-Leave").length,
-        onLeave: attendance.filter((a) => a.status === "On-Leave").length,
-        holiday: attendance.filter((a) => a.status === "Holiday").length,
-        dayOff: attendance.filter((a) => a.status === "Day-Off").length,
-        totalWorkHours: attendance.reduce(
-          (sum, record) => sum + (record.workHours || 0),
-          0
-        ),
+        total: currentMonthStats.total || 0,
+        present: currentMonthStats.present || 0,
+        absent: currentMonthStats.absent || 0,
+        late: currentMonthStats.late || 0,
+        halfDay: currentMonthStats.halfDay || 0,
+        earlyLeave: currentMonthStats.earlyLeave || 0,
+        onLeave: currentMonthStats.onLeave || currentMonthStats["on-leave"] || 0,
+        holiday: attendance.filter((a) => a.isHoliday).length,
+        dayOff: attendance.filter((a) => a.isWeekend).length,
+        totalWorkHours: currentMonthStats.totalWorkHours || 0,
       });
 
       setCurrentPage(1);
