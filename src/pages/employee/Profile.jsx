@@ -4,19 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CameraIcon, PencilIcon } from "@heroicons/react/24/outline";
 import useAuthStore from "@/stores/auth.store";
-import { toast } from "react-hot-toast";
 import useHrmStore from "@/stores/useHrmStore";
+import { toast } from "react-hot-toast";
+import { Loader2 } from "lucide-react";
 
 const Profile = () => {
-  const { user } = useAuthStore();
-  const { getMyAttendance, updateProfile, updateProfilePicture } =
-    useHrmStore();
+  const { user, updateUser } = useAuthStore();
+  const { getMyAttendance, updateProfile, getCurrentEmployee } = useHrmStore();
 
   const [currentUser, setCurrentUser] = useState(user);
-  const [profilePicUrl, setProfilePicUrl] = useState(
-    "/assets/images/default-avatar.png"
-  );
+  const [profilePicUrl, setProfilePicUrl] = useState("/assets/images/default-avatar.png");
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
   const [attendanceStats, setAttendanceStats] = useState({
@@ -26,46 +26,64 @@ const Profile = () => {
     percentage: 0,
     leaveCount: 0,
   });
+
   const [formData, setFormData] = useState({
-    firstName: currentUser?.firstName || "",
-    lastName: currentUser?.lastName || "",
-    email: currentUser?.email || "",
-    phone: currentUser?.phone || "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
     emergencyContact: {
-      name: currentUser?.emergencyContact?.name || "",
-      relationship: currentUser?.emergencyContact?.relationship || "",
-      phone: currentUser?.emergencyContact?.phone || "",
-      email: currentUser?.emergencyContact?.email || "",
+      name: "",
+      relationship: "",
+      phone: "",
+      email: "",
     },
   });
+
+  useEffect(() => {
+    fetchUserData();
+    fetchAttendanceStats();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getCurrentEmployee();
+      if (response?.data?.employee) {
+        const userData = response.data.employee;
+        setCurrentUser(userData);
+        updateUser(userData);
+        setFormData({
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          email: userData.email || "",
+          phone: userData.phone || "",
+          emergencyContact: {
+            name: userData.emergencyContact?.name || "",
+            relationship: userData.emergencyContact?.relationship || "",
+            phone: userData.emergencyContact?.phone || "",
+            email: userData.emergencyContact?.email || "",
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      toast.error("Failed to load profile data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchAttendanceStats();
   }, []);
 
   useEffect(() => {
-    setFormData({
-      firstName: currentUser?.firstName || "",
-      lastName: currentUser?.lastName || "",
-      email: currentUser?.email || "",
-      phone: currentUser?.phone || "",
-      emergencyContact: {
-        name: currentUser?.emergencyContact?.name || "",
-        relationship: currentUser?.emergencyContact?.relationship || "",
-        phone: currentUser?.emergencyContact?.phone || "",
-        email: currentUser?.emergencyContact?.email || "",
-      },
-    });
-  }, [currentUser]);
-
-  useEffect(() => {
     const picturePath = currentUser?.profilePicture;
     if (picturePath) {
-      // If it's already a full URL, use it as is
       if (picturePath.startsWith("http")) {
         setProfilePicUrl(picturePath);
       } else {
-        // Remove any leading slashes and construct the full URL
         const cleanPath = picturePath.replace(/^\/+/, "");
         setProfilePicUrl(`${import.meta.env.VITE_API_URL}/public/${cleanPath}`);
       }
@@ -217,7 +235,7 @@ const Profile = () => {
       const formData = new FormData();
       formData.append("profilePicture", file);
 
-      const response = await updateProfilePicture(formData);
+      const response = await updateProfile(formData);
 
       // Log the entire response for debugging
       console.log("Full response:", response);
@@ -229,7 +247,6 @@ const Profile = () => {
       }
 
       const updatedUser = response.data.data.employee;
-      const { updateUser } = useAuthStore();
       updateUser(updatedUser);
       setCurrentUser(updatedUser);
 
@@ -253,15 +270,29 @@ const Profile = () => {
 
   const handleSubmit = async () => {
     try {
+      setIsSaving(true);
       const response = await updateProfile(formData);
-      const { updateUser } = useAuthStore();
-      updateUser(response.data.user);
-      toast.success("Profile updated successfully");
-      setIsEditing(false);
+      if (response?.data?.user) {
+        setCurrentUser(response.data.user);
+        updateUser(response.data.user);
+        toast.success("Profile updated successfully");
+        setIsEditing(false);
+      }
     } catch (error) {
+      console.error("Error updating profile:", error);
       toast.error(error.message || "Failed to update profile");
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 animate-fadeIn">
@@ -271,8 +302,13 @@ const Profile = () => {
           onClick={() => (isEditing ? handleSubmit() : setIsEditing(true))}
           variant="outline"
           className="flex items-center gap-2 transition-all hover:scale-105"
+          disabled={isSaving}
         >
-          <PencilIcon className="h-4 w-4" />
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <PencilIcon className="h-4 w-4" />
+          )}
           {isEditing ? "Save Changes" : "Edit Profile"}
         </Button>
       </div>
