@@ -3,49 +3,49 @@ import api from './api';
 export const taskService = {
   // Create a new task
   async createTask(taskData) {
-    const response = await api.post('/api/tasks', taskData);
+    const response = await api.post('/tasks', taskData);
     return response.data;
   },
 
   // Get all tasks
   async getTasks(projectId) {
-    const response = await api.get(`/api/tasks?project=${projectId}`);
+    const response = await api.get(`/tasks?project=${projectId}`);
     return response.data;
   },
 
   // Get a single task
   async getTask(taskId) {
-    const response = await api.get(`/api/tasks/${taskId}`);
+    const response = await api.get(`/tasks/${taskId}`);
     return response.data;
   },
 
   // Update a task
   async updateTask(taskId, taskData) {
-    const response = await api.patch(`/api/tasks/${taskId}`, taskData);
+    const response = await api.patch(`/tasks/${taskId}`, taskData);
     return response.data;
   },
 
   // Delete a task
   async deleteTask(taskId) {
-    const response = await api.delete(`/api/tasks/${taskId}`);
+    const response = await api.delete(`/tasks/${taskId}`);
     return response.data;
   },
 
   // Update task status
   async updateTaskStatus(taskId, status) {
-    const response = await api.patch(`/api/tasks/${taskId}/status`, { status });
+    const response = await api.patch(`/tasks/${taskId}/status`, { status });
     return response.data;
   },
 
   // Assign task to employee
   async assignTask(taskId, assigneeId) {
-    const response = await api.patch(`/api/tasks/${taskId}/assign`, { assigneeId });
+    const response = await api.patch(`/tasks/${taskId}/assign`, { assigneeId });
     return response.data;
   },
 
   // Unassign task from employee
   async unassignTask(taskId) {
-    const response = await api.patch(`/api/tasks/${taskId}/unassign`);
+    const response = await api.patch(`/tasks/${taskId}/unassign`);
     return response.data;
   },
 
@@ -66,7 +66,7 @@ export const taskService = {
 
   async addComment(taskId, commentData) {
     try {
-      const response = await api.post(`/api/tasks/${taskId}/comments`, commentData);
+      const response = await api.post(`/tasks/${taskId}/comments`, commentData);
       return response.data;
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -76,7 +76,7 @@ export const taskService = {
 
   async addAttachment(taskId, attachmentData) {
     try {
-      const response = await api.post(`/api/tasks/${taskId}/attachments`, attachmentData);
+      const response = await api.post(`/tasks/${taskId}/attachments`, attachmentData);
       return response.data;
     } catch (error) {
       console.error('Error adding attachment:', error);
