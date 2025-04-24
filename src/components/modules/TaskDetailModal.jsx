@@ -180,6 +180,12 @@ const TaskDetailModal = ({ task, onClose, onTaskUpdate, employees }) => {
     }),
   };
 
+  // Function to handle comment author display safely
+  const getCommentAuthorName = (comment) => {
+    if (!comment || !comment.author) return "Unknown User";
+    return `${comment.author.firstName || ""} ${comment.author.lastName || ""}`.trim() || "Unknown User";
+  };
+
   return (
     <Transition.Root show={true} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -414,29 +420,29 @@ const TaskDetailModal = ({ task, onClose, onTaskUpdate, employees }) => {
 
                       <Tab.Panel className="relative h-[600px] flex flex-col">
                         <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4">
-                          {task?.comments?.map((comment, index) => (
-                            <div
-                              key={index}
-                              className="bg-gray-50 rounded-lg p-4"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-900">
-                                  {comment.author?.firstName}{" "}
-                                  {comment.author?.lastName}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {format(
-                                    new Date(comment.createdAt),
-                                    "MMM d, yyyy h:mm a"
-                                  )}
-                                </span>
+                          {task?.comments && task.comments.length > 0 ? (
+                            task.comments.map((comment, index) => (
+                              <div
+                                key={index}
+                                className="bg-gray-50 rounded-lg p-4"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {getCommentAuthorName(comment)}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {comment.createdAt && format(
+                                      new Date(comment.createdAt),
+                                      "MMM d, yyyy h:mm a"
+                                    )}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-sm text-gray-600">
+                                  {comment.content}
+                                </p>
                               </div>
-                              <p className="mt-1 text-sm text-gray-600">
-                                {comment.content}
-                              </p>
-                            </div>
-                          ))}
-                          {task?.comments?.length === 0 && (
+                            ))
+                          ) : (
                             <div className="text-center py-6 text-gray-500">
                               No comments yet
                             </div>
@@ -532,6 +538,12 @@ const TaskDetailModal = ({ task, onClose, onTaskUpdate, employees }) => {
                               </a>
                             </div>
                           ))}
+                          
+                          {(!task?.attachments || task.attachments.length === 0) && (
+                            <div className="text-center py-6 text-gray-500">
+                              No attachments yet
+                            </div>
+                          )}
                         </div>
 
                         <div className="space-y-4">

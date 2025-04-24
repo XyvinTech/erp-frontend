@@ -169,7 +169,7 @@ const router = createBrowserRouter(
                   element: <ProjectDetails />,
                 },
                 {
-                  path: "projecta/details",
+                  path: "details",
                   element: <ProjectDetails />,
                 },
               ],

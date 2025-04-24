@@ -15,6 +15,22 @@ const MyProjects = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [filteredProjects, setFilteredProjects] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Get user data from local storage
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const parsedUserData = JSON.parse(userData);
+        setCurrentUser(parsedUserData);
+        console.log('Current user:', parsedUserData);
+      }
+    } catch (error) {
+      console.error('Error getting user data from local storage:', error);
+    }
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -31,6 +47,21 @@ const MyProjects = () => {
     };
     loadData();
   }, [fetchProjects, fetchClients]);
+
+  useEffect(() => {
+    if (projects.length > 0 && currentUser) {
+      // Filter projects where the current user is assigned to at least one task
+      const myProjects = projects.filter(project => {
+        // Check if project has tasks array and if any task has current user as assignee
+        return project.tasks && project.tasks.some(task => 
+          task.assignee && task.assignee.id === currentUser.id
+        );
+      });
+      setFilteredProjects(myProjects);
+    } else {
+      setFilteredProjects([]);
+    }
+  }, [projects, currentUser]);
 
   const handleDelete = async (id) => {
     if (!id) {
@@ -70,15 +101,26 @@ const MyProjects = () => {
     setSelectedProject(null);
   };
 
-  const getClientName = (clientId) => {
-    if (!clientId) return 'N/A';
-    const client = clients.find(c => 
-      c._id === clientId || 
-      c.id === clientId || 
-      c._id === clientId?.$oid || 
-      c.id === clientId?.$oid
-    );
-    return client ? client.name : 'N/A';
+  const getClientName = (clientObj) => {
+    if (!clientObj) return 'N/A';
+    // Handle if client is just a reference ID
+    if (typeof clientObj === 'string') {
+      const client = clients.find(c => 
+        c._id === clientObj || 
+        c.id === clientObj
+      );
+      return client ? client.name : 'N/A';
+    }
+    // Handle if client is an object containing name
+    return clientObj.name || 'N/A';
+  };
+
+  const countMyTasks = (projectTasks) => {
+    if (!currentUser || !projectTasks || !Array.isArray(projectTasks)) return 0;
+    
+    return projectTasks.filter(task => 
+      task.assignee && task.assignee.id === currentUser.id
+    ).length;
   };
 
   const columns = useMemo(
@@ -92,9 +134,9 @@ const MyProjects = () => {
       },
       {
         Header: 'Client',
-        accessor: 'client',
+        accessor: row => getClientName(row.client),
         Cell: ({ value }) => (
-          <span className="text-sm text-gray-500">{getClientName(value)}</span>
+          <span className="text-sm text-gray-500">{value}</span>
         )
       },
       {
@@ -102,7 +144,7 @@ const MyProjects = () => {
         accessor: 'startDate',
         Cell: ({ value }) => (
           <span className="text-sm text-gray-500">
-            {new Date(value).toLocaleDateString()}
+            {value ? new Date(value).toLocaleDateString() : 'N/A'}
           </span>
         )
       },
@@ -123,20 +165,22 @@ const MyProjects = () => {
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
               value === 'completed'
                 ? 'bg-green-100 text-green-800'
-                : value === 'in_progress'
+                : value === 'in_progress' || value === 'in-progress'
                 ? 'bg-blue-100 text-blue-800'
-                : 'bg-yellow-100 text-yellow-800'
+                : value === 'on-hold'
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-gray-100 text-gray-800'
             }`}
           >
-            {value.replace('_', ' ').toUpperCase()}
+            {value?.replace(/[-_]/g, ' ').toUpperCase() || 'N/A'}
           </span>
         )
       },
       {
-        Header: 'Team Size',
-        accessor: 'team',
+        Header: 'My Tasks',
+        accessor: row => countMyTasks(row.tasks),
         Cell: ({ value }) => (
-          <span className="text-sm text-gray-500">{value?.length || 0} members</span>
+          <span className="text-sm text-gray-500">{value} tasks</span>
         )
       },
       {
@@ -157,10 +201,10 @@ const MyProjects = () => {
         }
       }
     ],
-    [navigate, clients]
+    [navigate, clients, currentUser]
   );
 
-  const data = useMemo(() => projects, [projects]);
+  const data = useMemo(() => filteredProjects, [filteredProjects]);
 
   const {
     getTableProps,
@@ -198,7 +242,7 @@ const MyProjects = () => {
     <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Projects</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">My Projects</h1>
           <button
             onClick={handleAdd}
             className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
@@ -241,13 +285,15 @@ const MyProjects = () => {
                     </tr>
                   );
                 })}
-                {projects.length === 0 && (
+                {filteredProjects.length === 0 && (
                   <tr>
                     <td
                       colSpan="7"
                       className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center"
                     >
-                      No projects found. Add a new project to get started.
+                      {currentUser
+                        ? "You don't have any projects assigned to you."
+                        : "Loading your projects..."}
                     </td>
                   </tr>
                 )}
@@ -327,4 +373,4 @@ const MyProjects = () => {
   );
 };
 
-export default MyProjects; 
+export default MyProjects;

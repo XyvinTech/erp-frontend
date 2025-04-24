@@ -16,6 +16,7 @@ export const taskService = {
   // Get a single task
   async getTask(taskId) {
     const response = await api.get(`/tasks/${taskId}`);
+    console.log(response.data,"getTask");
     return response.data;
   },
 
