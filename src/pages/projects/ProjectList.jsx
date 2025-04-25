@@ -7,6 +7,7 @@ import ProjectModal from '@/components/modules/ProjectModal';
 import { useNavigate } from 'react-router-dom';
 import { useTable, usePagination } from 'react-table';
 import { useMemo } from 'react';
+import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal';
 
 const ProjectList = () => {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ const ProjectList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null); 
 
   useEffect(() => {
     const loadData = async () => {
@@ -37,19 +40,49 @@ const ProjectList = () => {
       toast.error('Project ID is missing');
       return;
     }
-
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      try {
-        console.log('Deleting project:', id);
-        await deleteProject(id);
-        toast.success('Project deleted successfully');
-      } catch (error) {
-        console.error('Error deleting project:', error);
-        toast.error('Failed to delete project');
-      }
+    
+    // Find the project to delete for displaying its name in the modal
+    const project = projects.find(p => (p._id === id || p.id === id));
+    setProjectToDelete(project);
+    setDeleteModalOpen(true);
+  };
+  
+  const confirmDelete = async () => {
+    if (!projectToDelete || (!projectToDelete._id && !projectToDelete.id)) {
+      toast.error('Invalid project data');
+      return;
+    }
+    
+    try {
+      const projectId = projectToDelete._id || projectToDelete.id;
+      console.log('Deleting project:', projectId);
+      await deleteProject(projectId);
+      toast.success('Project deleted successfully');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.error('Failed to delete project');
+    } finally {
+      setDeleteModalOpen(false);
+      setProjectToDelete(null);
     }
   };
 
+  // Add this helper function to count unique assignees
+const getUniqueAssigneesCount = (project) => {
+  if (!project.tasks || project.tasks.length === 0) return 0;
+  
+  // Create a Set to track unique assignee IDs
+  const uniqueAssignees = new Set();
+  
+  // Loop through all tasks and add assignee IDs to the set
+  project.tasks.forEach(task => {
+    if (task.assignee && task.assignee.id) {
+      uniqueAssignees.add(task.assignee.id);
+    }
+  });
+  
+  return uniqueAssignees.size;
+};
   const handleEdit = (project) => {
     if (!project || (!project.id && !project._id)) {
       toast.error('Invalid project data');
@@ -139,9 +172,9 @@ const ProjectList = () => {
       },
       {
         Header: 'Team Size',
-        accessor: 'team',
+        accessor: row => getUniqueAssigneesCount(row),
         Cell: ({ value }) => (
-          <span className="text-sm text-gray-500">{value?.length || 0} members</span>
+          <span className="text-sm text-gray-500">{value} members</span>
         )
       },
       {
@@ -343,8 +376,19 @@ const ProjectList = () => {
         onClose={handleCloseModal}
         project={selectedProject}
       />
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setProjectToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Project"
+        message={`Are you sure you want to delete ${projectToDelete?.name}? This action cannot be undone.`}
+        itemName={projectToDelete?.name}
+      />
     </>
   );
 };
 
-export default ProjectList; 
+export default ProjectList;
