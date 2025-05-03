@@ -117,13 +117,37 @@ const useHrmStore = create(
       updateEmployee: async (id, data) => {
         set({ employeesLoading: true, employeesError: null });
         try {
+          console.log('Store: Updating employee with ID:', id);
+          console.log('Update data:', data);
+          
           const employee = await hrmService.updateEmployee(id, data);
-          set(state => ({
-            employees: state.employees.map(e => e._id === id ? employee : e),
-            employeesLoading: false
-          }));
+          console.log('Updated employee returned from service:', employee);
+          
+          set(state => {
+            console.log('Current employees in state:', state.employees);
+            
+            // More robust ID matching logic
+            const updatedEmployees = state.employees.map(e => {
+              // Convert IDs to strings for consistent comparison
+              const employeeId = (e._id || e.id || '').toString();
+              const updateId = (id || '').toString();
+              
+              console.log(`Comparing employee ID: ${employeeId} with update ID: ${updateId}`);
+              
+              return employeeId === updateId ? employee : e;
+            });
+            
+            console.log('Updated employees array:', updatedEmployees);
+            
+            return {
+              employees: updatedEmployees,
+              employeesLoading: false
+            };
+          });
+          
           return employee;
         } catch (error) {
+          console.error('Store: Error in updateEmployee:', error);
           set({
             employeesError: error.response?.data?.message || 'Failed to update employee',
             employeesLoading: false,
@@ -551,7 +575,23 @@ const useHrmStore = create(
           throw error;
         }
       },
-
+      reviewLeave: async (id, data) => {
+        set({ leavesLoading: true, leavesError: null });
+        try {
+          const leave = await hrmService.reviewLeave(id, data);
+          set(state => ({
+            leaves: state.leaves.map(l => l._id === id ? leave : l),
+            leavesLoading: false
+          }));
+          return leave;
+        } catch (error) {
+          set({
+            leavesError: error.response?.data?.message || 'Failed to review leave',
+            leavesLoading: false,
+          });
+          throw error;
+        }
+      },
       deleteLeave: async (id) => {
         set({ leavesLoading: true, leavesError: null });
         try {

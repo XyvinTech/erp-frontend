@@ -76,7 +76,7 @@ const LeaveApplication = () => {
             status:
               leave.status.charAt(0).toUpperCase() + leave.status.slice(1),
             approvedBy: leave.approvalChain?.length
-              ? "Reviewed by Manager"
+              ? "Reviewed"
               : "",
           }))
           .sort((a, b) => new Date(b.from) - new Date(a.from));
@@ -252,6 +252,40 @@ const LeaveApplication = () => {
         return <ClockIcon className="h-5 w-5 text-yellow-600" />;
     }
   };
+  
+  // Safe date range for display
+  const getFormattedDateRange = () => {
+    if (dateRange && dateRange.from && dateRange.to) {
+      const days = differenceInDays(dateRange.to, dateRange.from) + 1;
+      return (
+        <>
+          <span className="font-medium">{days} days</span>
+          <span className="mx-2">•</span>
+          <span>
+            {format(dateRange.from, "MMM d")} -{" "}
+            {format(dateRange.to, "MMM d, yyyy")}
+          </span>
+        </>
+      );
+    }
+    return "Select date range";
+  };
+  
+  // Handle Calendar selection with validation
+  const handleDateSelect = (range) => {
+    // Make sure we have a valid range object before updating state
+    if (range && range.from) {
+      // If only from is selected, set to to same as from
+      if (!range.to) {
+        range.to = range.from;
+      }
+      setDateRange(range);
+    } else {
+      // If invalid selection, reset to default
+      setDateRange({ from: new Date(), to: new Date() });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
@@ -301,21 +335,7 @@ const LeaveApplication = () => {
                     Duration
                   </label>
                   <div className="text-sm text-gray-500">
-                    {dateRange.from && dateRange.to ? (
-                      <>
-                        <span className="font-medium">
-                          {differenceInDays(dateRange.to, dateRange.from) + 1}{" "}
-                          days
-                        </span>
-                        <span className="mx-2">•</span>
-                        <span>
-                          {format(dateRange.from, "MMM d")} -{" "}
-                          {format(dateRange.to, "MMM d, yyyy")}
-                        </span>
-                      </>
-                    ) : (
-                      "Select date range"
-                    )}
+                    {getFormattedDateRange()}
                   </div>
                 </div>
               </div>
@@ -350,7 +370,7 @@ const LeaveApplication = () => {
                     <Calendar
                       mode="range"
                       selected={dateRange}
-                      onSelect={setDateRange}
+                      onSelect={handleDateSelect}
                       numberOfMonths={1}
                       month={currentMonth}
                       className="w-full"

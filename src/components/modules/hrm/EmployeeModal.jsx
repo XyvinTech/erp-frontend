@@ -110,7 +110,18 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
         let response;
         if (employee?.id || employee?._id) {
           const employeeId = employee.id || employee._id;
-          response = await updateEmployee(employeeId, formData);
+          console.log("🆔 Employee ID for update:", employeeId);
+          console.log("🆔 ID type:", typeof employeeId);
+          
+          try {
+            console.log("📡 Calling updateEmployee...");
+            response = await updateEmployee(employeeId, formData);
+            console.log("✅ Update successful:", response);
+          } catch (updateError) {
+            console.error("❌ Update error:", updateError);
+            console.error("Response details:", updateError.response?.data);
+            throw updateError;
+          }
         } else {
           response = await createEmployee(formData);
         }
@@ -126,6 +137,7 @@ const EmployeeModal = ({ employee, onClose, onSuccess }) => {
         }
       } catch (error) {
         console.error("Form submission error:", error);
+        console.error("Error details:", error.response?.data);
         toast.error(
           error.response?.data?.message ||
             error.message ||

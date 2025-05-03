@@ -18,9 +18,25 @@ export const createEmployee = async (data) => {
 };
 
 export const updateEmployee = async (id, data) => {
-    const response = await api.put(`hrm/employees/${id}`, data);
-    return response.data;
-};
+    try {
+      console.log(`HRM Service: Updating employee ${id}`);
+      console.log('Update payload:', data);
+      
+      // Remove leading slash to be consistent with other API calls
+      const response = await api.put(`hrm/employees/${id}`, data);
+      
+      console.log('Update response structure:', JSON.stringify(response.data, null, 2));
+      
+      // Normalize the response data - ensure we're returning a consistent format
+      const employeeData = response.data.employee || response.data;
+      console.log('Normalized employee data:', employeeData);
+      
+      return employeeData;
+    } catch (error) {
+      console.error('Employee update error:', error.response?.data || error.message);
+      throw error;
+    }
+  };
 
 export const deleteEmployee = async (id) => {
     const response = await api.delete(`hrm/employees/${id}`);
@@ -157,7 +173,7 @@ export const createLeave = async (data) => {
 };
 
 export const updateLeave = async (id, data) => {
-    const response = await api.put(`hrm/leaves/${id}`, data);
+    const response = await api.patch(`hrm/leaves/${id}`, data);
     return response.data;
 };
 
