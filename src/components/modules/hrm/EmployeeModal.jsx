@@ -11,13 +11,11 @@ const EMPLOYEE_ROLES = [
   "ERP System Administrator",
   "IT Manager",
   "Project Manager",
-  "Business Analyst",
-  "Developer",
-  "Quality Assurance Specialist",
   "HR Manager",
   "Finance Manager",
-  "Sales Manager",
   "Employee",
+  "Sales Manager",
+  "Admin"
 ];
 
 const validationSchema = Yup.object({
